@@ -1,0 +1,116 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://java.sun.com/jsf/facelets"
+                xmlns:h="http://java.sun.com/jsf/html"
+                xmlns:f="http://java.sun.com/jsf/core"
+                xmlns:p="http://primefaces.org/ui" xmlns:c="http://java.sun.com/jsp/jstl/core">
+    <p:dialog id="dialog_delete_document" header="Удаление документа" widgetVar="dlg_delete_document" resizable="false" modal="true" draggable="false" showEffect="fade" hideEffect="explode">
+        <h:form id="form_delete_document">
+            <h:panelGrid columns="1" cellpadding="5" style="width: 100%;">
+                <h:outputLabel value="Удалить ? :" />
+                <h:outputLabel id="label_deleteDocument" value="Название документа: #{documentBackingBean.selectedDocument.document_name} (Идент: #{documentBackingBean.selectedDocument.id})" />
+                <h:panelGrid columns="2" cellpadding="5" style="margin: 0 auto;">
+                    <p:commandButton type="button" icon="fa fa-times-circle fa-fw fa-fvm" value="Удалить">
+                        <p:ajax event="click" listener="#{documentController.buttonActionDeleteDocument}" update=":form_document:itemsCommands :form_document:documents_table" oncomplete="PF('dlg_delete_document').hide();" />
+                    </p:commandButton>
+                    <p:commandButton type="button" value="Отмена" onclick="PF('dlg_delete_document').hide();" />
+                </h:panelGrid>
+            </h:panelGrid>
+        </h:form>
+    </p:dialog>
+    <p:dialog responsive="true" style="width:40%; max-width: 95%; min-width: 40%; max-height: 95%; overflow: auto;" id="dialog_confirm_add_document" header="Добавление нового документа" widgetVar="dlg_confirm_add_document" resizable="false" modal="true" draggable="false">
+        <h:form id="form_confirm_add_document" enctype="multipart/form-data">
+            <p:panelGrid id="document_upload_field">
+                <p:row>
+                    <p:column style="white-space:nowrap;" headerText="#{msgs['document.uploadFile']}" priority="1">
+                        <p:fileUpload mode="simple"
+                                      value="#{documentBackingBean.uploadedFile}"
+                                      fileUploadListener="#{documentController.uploadedFileListener}"/>
+                    </p:column>
+                </p:row>
+            </p:panelGrid>
+            <h:panelGrid columns="2" cellpadding="5" style="margin: 0 auto;">
+                <p:commandButton ajax="false" action="#{documentController.handleFileUpload}" icon="fa fa-check fa-fw fa-fvm" value="Добавить" update=":form_document:itemsCommands :form_document:documents_table" />
+                <p:commandButton value="Отмена" onclick="PF('dlg_confirm_add_document').hide();" />
+            </h:panelGrid>
+        </h:form>
+    </p:dialog>
+    <h:form id="form_document">
+        <p:menubar id="itemsCommands">
+            <p:menuitem value="Добавить"
+                        icon="fa fa-plus-circle fa-fw fa-fvm"
+                        update="documents_table :dialog_confirm_add_document"
+                        actionListener="#{documentController.buttonActionAddDocument}"
+                        oncomplete="PF('dlg_confirm_add_document').show();"/>
+            <p:menuitem value="Удалить" icon="fa fa-times-circle fa-fw fa-fvm"
+                        onclick="PF('dlg_delete_document').show();" update=":form_delete_document:label_deleteDocument">
+            </p:menuitem>
+        </p:menubar>
+        <!--<p:growl id="msgs" showDetail="true"/>-->
+        <p:dataTable id="documents_table" var="document" value="#{documentController.documents}" selectionMode="single" selection="#{documentBackingBean.selectedDocument}" rowKey="#{document}" rows="10" editable="true" editMode="cell" widgetVar="cellCars">
+            <f:facet name="header">
+                #{msgs['document.header']}
+            </f:facet>
+
+            <p:ajax event="rowSelect" update=":form_document:itemsCommands" />
+            <p:ajax event="rowUnselect" update=":form_document:itemsCommands" />
+            <p:ajax event="cellEdit" listener="#{documentController.onCellEdit}" update=":form_document" />
+
+            <p:dialog modal="true" widgetVar="statusDialog" header="Status" draggable="false" closable="false" resizable="false">
+                <p:graphicImage name="/images/ajaxloadingbar.gif" />
+            </p:dialog>
+
+            <p:column headerText="#{msgs['document.name']}" style="table-layout:fixed;">
+                <p:cellEditor>
+                    <f:facet name="output"><h:outputText value="#{document.document_name.length() gt 23 ? document.document_name.substring(0,20).concat('...') : document.document_name}.#{document.document_extension}" /></f:facet>
+                    <f:facet name="input"><p:inputText id="document_name_id" value="#{document.document_name}" style="width:96%"/></f:facet>
+                </p:cellEditor>
+            </p:column>
+
+            <p:column headerText="#{msgs['document.download']}" style="width:40px; text-align: center;">
+                <p:commandButton ajax="false" actionListener="#{documentController.fileDownloadView(document)}" icon="ui-icon-arrowthick-1-s">
+                    <p:fileDownload value="#{documentBackingBean.streamedContent}" />
+                </p:commandButton>
+            </p:column>
+
+
+            <p:column headerText="#{msgs['document.type']}">
+                <p:cellEditor>
+                    <f:facet name="output"><h:outputText value="#{document.document_type.name}" /></f:facet>
+                    <f:facet name="input">
+                        <p:selectOneMenu panelStyle="width:160px;" style="width:150px;" value="#{document.document_type}" converter="documentTypeConverter">
+                            <f:selectItem noSelectionOption="true" itemLabel="#{msgs['document.chooseDocumentType']}" />
+                            <f:selectItems value="#{documentBackingBean.documentTypes}" var="documentType" itemLabel="#{documentType.name}" itemValue="#{documentType}" />
+                        </p:selectOneMenu>
+                    </f:facet>
+                </p:cellEditor>
+            </p:column>
+
+            <p:column headerText="#{msgs['document.descrption']}">
+                <p:cellEditor>
+                    <f:facet name="output"><h:outputText value="#{document.description}" /></f:facet>
+                    <f:facet name="input"><p:inputText id="document_descrption_id" value="#{document.description}" style="width:96%"/></f:facet>
+                </p:cellEditor>
+            </p:column>
+
+            <p:column headerText="#{msgs['document.dataCreated']}">
+                <h:outputText value="#{document.date_created}"/>
+            </p:column>
+
+            <p:column headerText="#{msgs['document.creatorName']}">
+                <h:outputText value="#{document.creator_user_id.title}" />
+            </p:column>
+
+            <p:column headerText="#{msgs['document.size']}">
+                <h:outputText value="#{document.document_size}" converter="fileSizeConverter">
+                </h:outputText>
+            </p:column>
+
+        </p:dataTable>
+
+        <p:contextMenu for="documents_table" widgetVar="cMenu">
+            <p:menuitem value="Edit Cell" icon="ui-icon-search" onclick="PF('cellCars').showCellEditor();return false;"/>
+            <p:menuitem value="Hide Menu" icon="ui-icon-close" onclick="PF('cMenu').hide()"/>
+        </p:contextMenu>
+    </h:form>
+</ui:composition>
+

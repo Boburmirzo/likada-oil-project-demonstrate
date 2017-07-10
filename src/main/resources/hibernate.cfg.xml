@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE hibernate-configuration PUBLIC
+        "-//Hibernate/Hibernate Configuration DTD 3.0//EN"
+        "http://www.hibernate.org/dtd/hibernate-configuration-3.0.dtd">
+<hibernate-configuration>
+    <session-factory>
+
+        <property name="connection.url">jdbc:postgresql://localhost:5432/likada</property>
+        <property name="connection.username">postgres</property>
+        <property name="connection.password">9767565ub</property>
+        <property name="connection.driver_class">org.postgresql.Driver</property>
+        <property name="dialect">org.hibernate.dialect.PostgreSQL82Dialect</property>
+
+        <!--<property name="hibernate.generate_statistics">true</property>-->
+        <property name="show_sql">false</property>
+        <property name="format_sql">true</property>
+
+        <!-- JDBC connection pool -->
+        <property name="hibernate.c3p0.min_size">5</property>
+        <property name="hibernate.c3p0.max_size">20</property>
+        <property name="hibernate.c3p0.timeout">300</property>
+        <property name="hibernate.c3p0.max_statements">50</property>
+        <property name="hibernate.c3p0.idle_test_period">3000</property>
+
+        <!-- Hibernate ehcache: second level cache -->
+        <property name="hibernate.cache.use_second_level_cache">true</property>
+        <property name="hibernate.cache.use_query_cache">true</property>
+        <!--<property name="hibernate.cache.region.factory_class">org.hibernate.cache.ehcache.EhCacheRegionFactory</property>-->
+        <property name="hibernate.cache.region.factory_class">org.hibernate.cache.ehcache.SingletonEhCacheRegionFactory</property>
+
+        <mapping class="pro.likada.model.AddressApartmentType" />
+        <mapping class="pro.likada.model.AddressBuildingType" />
+        <mapping class="pro.likada.model.AddressHouseType" />
+        <mapping class="pro.likada.model.AddressRegion" />
+        <mapping class="pro.likada.model.Agreement" />
+        <mapping class="pro.likada.model.AgreementStatus" />
+        <mapping class="pro.likada.model.AgreementType" />
+        <mapping class="pro.likada.model.BankAccount" />
+        <mapping class="pro.likada.model.Contractor" />
+        <mapping class="pro.likada.model.ContractorAgencyType" />
+        <mapping class="pro.likada.model.ContractorAgreementPattern" />
+        <mapping class="pro.likada.model.ContractorOrganizationType" />
+        <mapping class="pro.likada.model.Customer" />
+        <mapping class="pro.likada.model.Document" />
+        <mapping class="pro.likada.model.DocumentType" />
+        <mapping class="pro.likada.model.Drive" />
+        <mapping class="pro.likada.model.DrivePoint" />
+        <mapping class="pro.likada.model.DrivePointType" />
+        <mapping class="pro.likada.model.Driver" />
+        <mapping class="pro.likada.model.DriveState" />
+        <mapping class="pro.likada.model.DriveStateType" />
+        <mapping class="pro.likada.model.DriveStatus" />
+        <mapping class="pro.likada.model.FinancialItem" />
+        <mapping class="pro.likada.model.FinancialItemType" />
+        <mapping class="pro.likada.model.InPaymentWay" />
+        <mapping class="pro.likada.model.MeasureUnit" />
+        <mapping class="pro.likada.model.VehicleMechanicalStatusType" />
+        <mapping class="pro.likada.model.Order" />
+        <mapping class="pro.likada.model.OrderPaymentType" />
+        <mapping class="pro.likada.model.OrderStatusType" />
+        <mapping class="pro.likada.model.Permission" />
+        <mapping class="pro.likada.model.Product" />
+        <mapping class="pro.likada.model.ProductGroup" />
+        <mapping class="pro.likada.model.ProductPrice" />
+        <mapping class="pro.likada.model.RestAuthentication" />
+        <mapping class="pro.likada.model.TelegramBot" />
+        <mapping class="pro.likada.model.TelegramButtonMenu" />
+        <mapping class="pro.likada.model.TelegramConversation" />
+        <mapping class="pro.likada.model.TelegramUser" />
+        <mapping class="pro.likada.model.ProductType" />
+        <mapping class="pro.likada.model.Requisite" />
+        <mapping class="pro.likada.model.Role" />
+        <mapping class="pro.likada.model.ShipmentBasis" />
+        <mapping class="pro.likada.model.Trailer" />
+        <mapping class="pro.likada.model.Truck" />
+        <mapping class="pro.likada.model.TransportationCompanyType" />
+        <mapping class="pro.likada.model.TransportationHiredVehicleType" />
+        <mapping class="pro.likada.model.TransportationVehicleType" />
+        <mapping class="pro.likada.model.User" />
+        <mapping class="pro.likada.model.Vehicle" />
+        <mapping class="pro.likada.model.VehicleStatus" />
+        <mapping class="pro.likada.model.VehicleMechanicalStatus" />
+        <mapping class="pro.likada.model.VehicleLogisticianStatus" />
+
+    </session-factory>
+</hibernate-configuration>

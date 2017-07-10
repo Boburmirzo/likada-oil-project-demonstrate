@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+		"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:h="http://java.sun.com/jsf/html" xmlns:f="http://java.sun.com/jsf/core" xmlns:ui="http://java.sun.com/jsf/facelets" xmlns:p="http://primefaces.org/ui">
+<h:body>
+	<p:importEnum type="pro.likada.util.ModelConstantEnum" var="ModelConstantEnum" allSuffix="ALL_ENUM_VALUES" />
+	<p:importEnum type="pro.likada.util.AccessTypeEnum" var="AccessTypeEnum" allSuffix="ALL_ENUM_VALUES" />
+	<ui:composition>
+		<h:form>
+
+			<div id="lo_main_menu">
+				<p:menubar id="menubar_main">
+					<p:submenu label="Продажи" icon="fa fa-fire">
+						<p:menuitem icon="fa fa-bookmark" value="#{msgs['menu.orders.title']}" action="orders.xhtml?faces-redirect=true" rendered="#{loginController.hasAccessTo(enumBean.modelOrder, enumBean.accessView)}" />
+						<p:menuitem icon="fa fa-slideshare" value="#{msgs['menu.customers.title']}" action="customers.xhtml?faces-redirect=true" rendered="#{loginController.hasAccessTo(enumBean.modelCustomer, enumBean.accessView)}" />
+						<p:separator rendered="#{loginController.hasAccessTo(enumBean.modelOrder, enumBean.accessView) || loginController.hasAccessTo(enumBean.modelCustomer, enumBean.accessView)}"/>
+						<p:menuitem icon="fa fa-file-text" value="#{msgs['menu.agreements.title']}" action="agreements.xhtml?faces-redirect=true" rendered="#{loginController.hasAccessTo(enumBean.modelAgreement, enumBean.accessView)}" />
+						<p:menuitem icon="fa fa-th" value="#{msgs['menu.products.title']}" action="products.xhtml?faces-redirect=true" rendered="#{loginController.hasAccessTo(enumBean.modelProduct, enumBean.accessView)}" />
+						<p:menuitem icon="fa fa-rub" value="#{msgs['financialItem.title']}" action="financial_items.xhtml?faces-redirect=true" rendered="#{loginController.hasAccessTo(enumBean.modelFinancialItem, enumBean.accessView)}" style="width:100%;" />
+					</p:submenu>
+
+					<p:submenu label="Перевозка" icon="fa fa-rocket">
+						<p:menuitem icon="fa fa-stumbleupon" value="#{msgs['menu.drive.title']}" action="drive.xhtml?faces-redirect=true" />
+						<p:menuitem icon="fa fa-map" value="#{msgs['menu.map.title']}" action="global_map.xhtml?faces-redirect=true"/>
+						<p:menuitem icon="fa fa-random" value="#{msgs['menu.vehiclestatuses.title']}" action="vehicle_statuses.xhtml?faces-redirect=true" rendered="#{loginController.hasAccessTo(enumBean.modelVehicleStatus, enumBean.accessView)}" />
+						<p:separator />
+						<p:menuitem icon="fa fa-list-alt" value="#{msgs['menu.trucks.title']}" action="trucks.xhtml?faces-redirect=true" rendered="#{loginController.hasAccessTo(enumBean.modelTruck, enumBean.accessView)}" />
+						<p:menuitem icon="fa fa-list-alt" value="#{msgs['menu.trailers.title']}" action="trailers.xhtml?faces-redirect=true" rendered="#{loginController.hasAccessTo(enumBean.modelTrailer, enumBean.accessView)}" />
+						<p:menuitem icon="fa fa-list-alt" value="#{msgs['menu.drivers.title']}" action="drivers.xhtml?faces-redirect=true" rendered="#{loginController.hasAccessTo(enumBean.modelDriver, enumBean.accessView)}" />
+						<p:menuitem icon="fa fa-list-alt" value="#{msgs['menu.vehicles.title']}" action="vehicles.xhtml?faces-redirect=true" rendered="#{loginController.hasAccessTo(enumBean.modelVehicle, enumBean.accessView)}" />
+
+					</p:submenu>
+
+					<p:submenu label="Справочники" icon="fa fa-list">
+						<p:menuitem icon="fa fa-list-alt" value="#{msgs['menu.contractors.title']}" action="contractors.xhtml?faces-redirect=true" rendered="#{loginController.hasAccessTo(enumBean.modelContractor, enumBean.accessView)}" />
+
+						<p:menuitem icon="fa fa-list-alt" value="#{msgs['menu.companies.title']}" action="companies.xhtml?faces-redirect=true" rendered="#{loginController.hasAccessTo(enumBean.modelCompany, enumBean.accessView)}" />
+						<p:menuitem icon="fa fa-list-alt" value="#{msgs['menu.carriers.title']}" action="carriers.xhtml?faces-redirect=true" rendered="#{loginController.hasAccessTo(enumBean.modelCarrier, enumBean.accessView)}" />
+						<p:menuitem icon="fa fa-list-alt" value="#{msgs['menu.providers.title']}" action="providers.xhtml?faces-redirect=true" rendered="#{loginController.hasAccessTo(enumBean.modelProvider, enumBean.accessView)}" />
+
+						<p:menuitem icon="fa fa-list-alt" value="#{msgs['menu.goodTypes.title']}" action="product_types.xhtml?faces-redirect=true" rendered="#{loginController.hasAccessTo(enumBean.modelProductType, enumBean.accessView)}" style="width:100%;" />
+						<p:menuitem icon="fa fa-list-alt" value="#{msgs['menu.bases.title']}" action="bases.xhtml?faces-redirect=true" rendered="#{loginController.hasAccessTo(enumBean.modelBases, enumBean.accessView)}" />
+					</p:submenu>
+
+					<p:submenu icon="fa fa-user" style="float: right;">
+						<p:menuitem  icon="fa fa-user" value="#{loginController.currentUser.firstName} #{loginController.currentUser.lastName}"/>
+						<p:menuitem  icon="fa fa-sign-out"  value="Выйти" action="#{loginController.doLogout}" />
+					</p:submenu>
+				</p:menubar>
+			</div>
+
+			<div id="lo_main_menu_simple">
+				<p:menubar id="menubar_main_simple">
+					<p:submenu icon="fa fa-fire">
+						<p:menuitem icon="fa fa-bookmark" value="#{msgs['menu.orders.title']}" action="orders.xhtml?faces-redirect=true" rendered="#{loginController.hasAccessTo(enumBean.modelOrder, enumBean.accessView)}" />
+						<p:menuitem icon="fa fa-slideshare" value="#{msgs['menu.customers.title']}" action="customers.xhtml?faces-redirect=true" rendered="#{loginController.hasAccessTo(enumBean.modelCustomer, enumBean.accessView)}" />
+						<p:separator rendered="#{loginController.hasAccessTo(enumBean.modelOrder, enumBean.accessView) || loginController.hasAccessTo(enumBean.modelCustomer, enumBean.accessView)}"/>
+						<p:menuitem icon="fa fa-file-text" value="#{msgs['menu.agreements.title']}" action="agreements.xhtml?faces-redirect=true" rendered="#{loginController.hasAccessTo(enumBean.modelAgreement, enumBean.accessView)}" />
+						<p:menuitem icon="fa fa-th" value="#{msgs['menu.products.title']}" action="products.xhtml?faces-redirect=true" rendered="#{loginController.hasAccessTo(enumBean.modelProduct, enumBean.accessView)}" />
+						<p:menuitem icon="fa fa-rub" value="#{msgs['financialItem.title']}" action="financial_items.xhtml?faces-redirect=true" rendered="#{loginController.hasAccessTo(enumBean.modelFinancialItem, enumBean.accessView)}" style="width:100%;" />
+					</p:submenu>
+
+					<p:submenu icon="fa fa-rocket">
+						<p:menuitem icon="fa fa-stumbleupon" value="#{msgs['menu.drive.title']}" action="drive.xhtml?faces-redirect=true" />
+						<p:menuitem icon="fa fa-map" value="#{msgs['menu.map.title']}" action="global_map.xhtml?faces-redirect=true"/>
+						<p:menuitem icon="fa fa-random" value="#{msgs['menu.vehiclestatuses.title']}" action="vehicle_statuses.xhtml?faces-redirect=true" rendered="#{loginController.hasAccessTo(enumBean.modelVehicleStatus, enumBean.accessView)}" />
+						<p:separator />
+						<p:menuitem icon="fa fa-list-alt" value="#{msgs['menu.trucks.title']}" action="trucks.xhtml?faces-redirect=true" rendered="#{loginController.hasAccessTo(enumBean.modelTruck, enumBean.accessView)}" />
+						<p:menuitem icon="fa fa-list-alt" value="#{msgs['menu.trailers.title']}" action="trailers.xhtml?faces-redirect=true" rendered="#{loginController.hasAccessTo(enumBean.modelTrailer, enumBean.accessView)}" />
+						<p:menuitem icon="fa fa-list-alt" value="#{msgs['menu.drivers.title']}" action="drivers.xhtml?faces-redirect=true" rendered="#{loginController.hasAccessTo(enumBean.modelDriver, enumBean.accessView)}" />
+						<p:menuitem icon="fa fa-list-alt" value="#{msgs['menu.vehicles.title']}" action="vehicles.xhtml?faces-redirect=true" rendered="#{loginController.hasAccessTo(enumBean.modelVehicle, enumBean.accessView)}" />
+
+					</p:submenu>
+
+					<p:submenu icon="fa fa-list">
+						<p:menuitem icon="fa fa-list-alt" value="#{msgs['menu.contractors.title']}" action="contractors.xhtml?faces-redirect=true" rendered="#{loginController.hasAccessTo(enumBean.modelContractor, enumBean.accessView)}" />
+
+						<p:menuitem icon="fa fa-list-alt" value="#{msgs['menu.companies.title']}" action="companies.xhtml?faces-redirect=true" rendered="#{loginController.hasAccessTo(enumBean.modelCompany, enumBean.accessView)}" />
+						<p:menuitem icon="fa fa-list-alt" value="#{msgs['menu.carriers.title']}" action="carriers.xhtml?faces-redirect=true" rendered="#{loginController.hasAccessTo(enumBean.modelCarrier, enumBean.accessView)}" />
+						<p:menuitem icon="fa fa-list-alt" value="#{msgs['menu.providers.title']}" action="providers.xhtml?faces-redirect=true" rendered="#{loginController.hasAccessTo(enumBean.modelProvider, enumBean.accessView)}" />
+
+						<p:menuitem icon="fa fa-list-alt" value="#{msgs['menu.goodTypes.title']}" action="product_types.xhtml?faces-redirect=true" rendered="#{loginController.hasAccessTo(enumBean.modelProductType, enumBean.accessView)}" style="width:100%;" />
+						<p:menuitem icon="fa fa-list-alt" value="#{msgs['menu.bases.title']}" action="bases.xhtml?faces-redirect=true" rendered="#{loginController.hasAccessTo(enumBean.modelBases, enumBean.accessView)}" />
+					</p:submenu>
+
+					<p:submenu icon="fa fa-user" style="float: right;">
+						<p:menuitem  icon="fa fa-user" value="#{loginController.currentUser.firstName} #{loginController.currentUser.lastName}"/>
+						<p:menuitem  icon="fa fa-sign-out"  value="Выйти" action="#{loginController.doLogout}" />
+					</p:submenu>
+				</p:menubar>
+			</div>
+
+		</h:form>
+	</ui:composition>
+</h:body>
+</html>

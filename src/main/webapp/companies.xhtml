@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+		"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:h="http://java.sun.com/jsf/html" xmlns:f="http://java.sun.com/jsf/core" xmlns:ui="http://java.sun.com/jsf/facelets" xmlns:p="http://primefaces.org/ui">
+<h:body>
+	<ui:composition template="/layout/forcab.xhtml">
+		<ui:define name="windowTitle">#{msgs['companies.title']}</ui:define>
+		<ui:define name="content">
+			<script type="text/javascript">
+                function reloadPage() {
+                    location.reload();
+                }
+			</script>
+
+			<p:dialog style="width:50%; max-width: 95%; max-height: 95%; overflow: auto;" id="dialog_delete_contractor" header="Удаление предприятия" widgetVar="dlg_delete_contractor" resizable="false" modal="true" draggable="false">
+				<h:form id="form_delete_contractor">
+					<h:panelGrid columns="1" cellpadding="5" style="width: 100%;">
+						<h:outputLabel value="Удалить ? :" />
+						<h:outputLabel value="#{contractorBackingBean.selectedContractor.nameShort} (Идент: #{contractorBackingBean.selectedContractor.id})" />
+						<h:panelGrid columns="2" cellpadding="5" style="margin: 0 auto;">
+							<p:commandButton type="button" icon="fa fa-times-circle fa-fw fa-fvm" value="Удалить">
+								<p:ajax event="click" listener="#{contractorController.deleteSelectedContractor}" update=":form_edit_contractors:table_contractors :form_edit_contractors:menubar_contractors" oncomplete="PF('dlg_delete_contractor').hide();" />
+							</p:commandButton>
+							<p:commandButton type="button" value="Отмена" onclick="PF('dlg_delete_contractor').hide();" />
+						</h:panelGrid>
+					</h:panelGrid>
+				</h:form>
+			</p:dialog>
+
+			<p:dialog responsive="true" style="width:40%; max-width: 95%; min-width: 40%; max-height: 95%; overflow: auto;" id="dialog_confirm_inn" header="Подтверждение ИНН" widgetVar="dlg_confirm_inn" resizable="false" modal="true" draggable="false">
+				<h:form id="form_confirm_inn">
+					<p:messages id="msgs" showDetail="true" />
+
+					<p:dataTable var="alreadyExistContractor" value="#{contractorBackingBean.alreadyExistContractorsWithINN}" emptyMessage="Не найдено" rendered="#{contractorBackingBean.alreadyExistContractorsWithINN.size() > 0}">
+						<p:column style="white-space:nowrap;" headerText="#{msgs['provider.nameWork']}" priority="1">
+							<h:outputText value="#{alreadyExistContractor.nameWork}" />
+						</p:column>
+						<p:column style="white-space:nowrap;" headerText="#{msgs['provider.nameShort']}" priority="2">
+							<h:outputText value="#{alreadyExistContractor.nameShort}" />
+						</p:column>
+						<p:column style="white-space:nowrap;" headerText="#{msgs['provider.INN']}" priority="1">
+							<h:outputText value="#{alreadyExistContractor.inn}" />
+						</p:column>
+						<p:column style="white-space:nowrap;" headerText="#{msgs['provider.OGRN']}" priority="2">
+							<h:outputText value="#{alreadyExistContractor.ogrn}" />
+						</p:column>
+					</p:dataTable>
+
+					<div class="ui-fluid" style="width: 100%;">
+						<div class="ui-grid ui-grid-responsive">
+							<div class="ui-grid-row">
+								<div class="ui-grid-col-1 resp_ui-grid-col-1">
+									<p:outputLabel value="ИНН нового предприятия" />
+								</div>
+								<div class="ui-grid-col-10">
+									<p:inputText id="field_newContractor_inn" value="#{contractorBackingBean.newContractorByINNString}" />
+								</div>
+							</div>
+							<div class="ui-grid-row">
+								<div class="ui-grid-col-1 resp_ui-grid-col-1"></div>
+								<div class="ui-grid-col-10">
+									<h:outputLabel style="font-style: italic; font-size: small;" value="В дальнейшем его невозможно изменять!" />
+								</div>
+							</div>
+						</div>
+					</div>
+
+					<h:panelGrid columns="2" cellpadding="5" style="margin: 0 auto;">
+						<p:commandButton icon="fa fa-check fa-fw fa-fvm" value="Подтвердить" actionListener="#{contractorController.buttonActionAddNewContractorByINN(enumBean.modelCompany)}" update="form_confirm_inn" />
+						<p:commandButton value="Отмена" onclick="PF('dlg_confirm_inn').hide();" />
+					</h:panelGrid>
+				</h:form>
+			</p:dialog>
+
+			<h:form id="form_edit_contractors">
+				<div class="page_title">#{msgs['companies.title']}</div>
+				<p:menubar id="menubar_contractors">
+					<p:menuitem value="Добавить" disabled="#{!loginController.hasAccessTo(enumBean.modelCompany, enumBean.accessAdd)}" icon="fa fa-plus-circle fa-fw fa-fvm" actionListener="#{contractorController.buttonActionPrepareAddNewContractor}" update="dialog_confirm_inn" oncomplete="PF('dlg_confirm_inn').show();" />
+					<p:menuitem value="Удалить" icon="fa fa-times-circle fa-fw fa-fvm" onclick="PF('dlg_delete_contractor').show();" update="form_delete_contractor" disabled="#{contractorBackingBean.selectedContractor==null or !loginController.hasAccessTo(enumBean.modelCompany, enumBean.accessDelete)}" />
+
+					<f:facet name="options">
+						<p:inputText id="searchContractorFieldStr" value="#{contractorBackingBean.searchStringInContractorsTable}" placeholder="Поиск по названию ИНН ОГРН" style="margin-right:10px">
+							<p:ajax event="keyup" update="table_contractors" listener="#{contractorController.refreshContractorsTable(enumBean.modelCompany.modelName)}" />
+						</p:inputText>
+						<p:commandButton type="button" icon="fa fa-close fa-fw">
+							<p:ajax event="click" listener="#{contractorController.resetContractorsTableData(enumBean.modelCompany.modelName)}" update="form_edit_contractors" />
+						</p:commandButton>
+					</f:facet>
+				</p:menubar>
+
+				<div style="height: 5px;" />
+				<p:dataTable id="table_contractors" var="contractor" value="#{contractorController.getContractors(enumBean.modelCompany.modelName)}" selectionMode="single" selection="#{contractorBackingBean.selectedContractor}" rowKey="#{contractor.id}" rows="25" rowsPerPageTemplate="10,25,50,100" paginator="true"
+							 paginatorAlwaysVisible="true" paginatorTemplate="{CurrentPageReport} {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}" currentPageReportTemplate="Предприятии всего {totalRecords}. Страница {currentPage} из {totalPages}"
+							 emptyMessage="Не найдено">
+
+					<p:ajax event="rowSelect" update=":form_edit_contractors:menubar_contractors" />
+					<p:ajax event="rowUnselect" update=":form_edit_contractors:menubar_contractors" />
+					<p:ajax event="rowDblselect" listener="#{contractorController.doubleClickSelectedRowInTableContractors}" />
+
+					<p:column headerText="#{msgs['contractor.contractorId']}" style="width:30px;" priority="3">
+						<h:outputText value="#{contractor.id}" />
+					</p:column>
+
+					<p:column style="width:20px; text-align: center;" priority="1">
+						<f:facet name="header">
+							<i class="fa fa-edit" />
+						</f:facet>
+						<p:commandButton icon="fa fa-edit" actionListener="#{contractorController.editContractor(contractor)}" />
+					</p:column>
+
+					<p:column style="white-space:nowrap;width:50px;" priority="2" headerText="#{msgs['company.active']}">
+						<p:outputPanel style="text-align: center;" rendered="#{contractor.active}">
+							<i class="fa fa-check" />
+						</p:outputPanel>
+					</p:column>
+
+					<p:column headerText="#{msgs['contractor.nameWork']}" style="white-space:nowrap;" priority="1">
+						<h:outputText value="#{contractor.nameWork}" />
+					</p:column>
+					<p:column headerText="#{msgs['contractor.nameShort']}" style="white-space:nowrap;" priority="3">
+						<h:outputText value="#{contractor.nameShort}" />
+					</p:column>
+					<p:column headerText="#{msgs['contractor.INN']}" style="white-space:nowrap;" priority="2">
+						<h:outputText value="#{contractor.inn}" />
+					</p:column>
+					<p:column headerText="#{msgs['contractor.OGRN']}" style="white-space:nowrap;" priority="3">
+						<h:outputText value="#{contractor.ogrn}" />
+					</p:column>
+				</p:dataTable>
+			</h:form>
+		</ui:define>
+	</ui:composition>
+</h:body>
+</html>

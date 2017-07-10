@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" 
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:h="http://java.sun.com/jsf/html" xmlns:f="http://java.sun.com/jsf/core" xmlns:ui="http://java.sun.com/jsf/facelets" xmlns:p="http://primefaces.org/ui">
+<h:body>
+	<ui:composition template="/layout/forcab.xhtml">
+		<ui:define name="windowTitle">#{msgs['bases.title']}</ui:define>
+		<ui:define name="content">
+
+			<p:outputPanel rendered="#{loginController.hasAccessTo(enumBean.modelBases, enumBean.accessView) or loginController.hasAccessTo(enumBean.modelBases, enumBean.accessEdit)}">
+
+				<ui:param name="edit_readOnly" value="#{!loginController.hasAccessTo(enumBean.modelBases, enumBean.accessEdit)}" />
+
+				<p:dialog id="dialog_delete_shipmentBase" header="Удаление вида товара / услуги" widgetVar="dlg_delete_shipment_base" resizable="false" modal="true" draggable="false" showEffect="fade" hideEffect="explode" >
+					<h:form id="form_shipment_delete">
+						<h:panelGrid columns="1" cellpadding="5" style="width: 100%;">
+							<h:outputLabel value="Вы действительно хотите удалить данный вид товара ?" />
+							<h:outputLabel style="font-weight: bold;" value="Вид товара: #{productBackingBean.popupDialogSelectedShipmentBase.nameShort} идент.: #{productBackingBean.popupDialogSelectedShipmentBase.id}" />
+							<h:panelGrid columns="2" cellpadding="5" style="margin: 0 auto;">
+								<p:commandButton icon="fa fa-times-circle fa-fw fa-fvm" value="Удалить" update=":form_shipment_base_choice:table_shipment_bases" actionListener="#{productController.buttonActionRemoveShipmentBase}" oncomplete="PF('dlg_delete_shipment_base').hide();" />
+								<p:commandButton value="Отмена" onclick="PF('dlg_delete_goodKind').hide();" />
+							</h:panelGrid>
+						</h:panelGrid>
+					</h:form>
+				</p:dialog>
+
+					<h:form id="form_shipment_base_choice">
+						<p:menubar id="menubar_shipment_bases" rendered="#{loginController.hasAccessTo(enumBean.modelBases, enumBean.accessView) or loginController.hasAccessTo(enumBean.modelBases, enumBean.accessEdit)}">
+							<p:menuitem value="Добавить" disabled="#{edit_readOnly}" icon="fa fa-plus-circle fa-fw fa-fvm" actionListener="#{productController.buttonActionNewShipmentBase}" update="table_shipment_bases" />
+							<p:menuitem value="Удалить" icon="fa fa-times-circle fa-fw fa-fvm" onclick="PF('dlg_delete_shipment_base').show();" update="form_shipment_delete" disabled="#{productBackingBean.popupDialogSelectedShipmentBase==null or edit_readOnly}" rendered="#{loginController.hasAccessTo(enumBean.modelBases, enumBean.accessDelete)}"/>
+							<f:facet name="options">
+								<p:inputText id="searchShipmentBasedStr" value="#{productBackingBean.popupDialogSearchStringShipmentBaseByNameShort}" placeholder="Поиск по названию базы" style="margin-right:10px">
+									<p:ajax event="keyup" update="table_shipment_bases" listener="#{productController.refreshShipmentBasisTableInPopupDialog}" />
+								</p:inputText>
+								<p:commandButton type="button" icon="fa fa-close fa-fw">
+									<p:ajax event="click" listener="#{productController.resetShipmentBasisTableInPopupDialog}" update="form_shipment_base_choice" />
+								</p:commandButton>
+							</f:facet>
+						</p:menubar>
+
+						<div style="height: 5px;" />
+						<p:dataTable id="table_shipment_bases" var="shipment_base" value="#{productController.getProductShipmentBases()}" editMode="row" editable="#{loginController.hasAccessTo(enumBean.modelBases, enumBean.accessEdit)}" selectionMode="single" selection="#{productBackingBean.popupDialogSelectedShipmentBase}" rowKey="#{shipment_base.id}" rows="20" paginator="true"
+									 paginatorTemplate="{CurrentPageReport} {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink}" currentPageReportTemplate="Базис отгрузки всего {totalRecords}. Страница {currentPage} из {totalPages}" emptyMessage="Не найдено">
+
+							<p:ajax event="rowSelect" update=":form_shipment_base_choice:menubar_shipment_bases" />
+							<p:ajax event="rowUnselect" update=":form_shipment_base_choice:menubar_shipment_bases" />
+
+							<p:ajax event="rowEdit" listener="#{productController.onRowEditShipmentBase}" update="table_shipment_bases" />
+							<p:ajax event="rowEditCancel" listener="#{productController.onRowCancelShipmentBase}" update="table_shipment_bases" />
+
+							<p:column style="width:20px; text-align: center;" priority="1">
+								<f:facet name="header">
+									<i class="fa fa-check" />
+								</f:facet>
+								<p:commandButton icon="fa fa-check" actionListener="#{productController.setSelectedShipmentBase(shipment_base)}" update=":form_shipment_base_choice:table_shipment_bases"/>
+							</p:column>
+
+							<p:column headerText="#{msgs['base.nameShort']}">
+								<p:cellEditor>
+									<f:facet name="output">
+										<h:outputText value="#{shipment_base.nameShort}" />
+									</f:facet>
+									<f:facet name="input">
+										<p:inputText value="#{shipment_base.nameShort}" style="width:98%" />
+									</f:facet>
+								</p:cellEditor>
+							</p:column>
+							<p:column headerText="#{msgs['base.nameFull']}">
+								<p:cellEditor>
+									<f:facet name="output">
+										<h:outputText value="#{shipment_base.nameFull}" />
+									</f:facet>
+									<f:facet name="input">
+										<p:inputText value="#{shipment_base.nameFull}" style="width:98%" />
+									</f:facet>
+								</p:cellEditor>
+							</p:column>
+							<p:column headerText="#{msgs['base.address']}">
+								<p:cellEditor>
+									<f:facet name="output">
+										<h:outputText value="#{shipment_base.address}" />
+									</f:facet>
+									<f:facet name="input">
+										<p:inputText value="#{shipment_base.address}" style="width:98%" />
+									</f:facet>
+								</p:cellEditor>
+							</p:column>
+							<p:column headerText="#{msgs['base.description']}">
+								<p:cellEditor>
+									<f:facet name="output">
+										<h:outputText value="#{shipment_base.description}" />
+									</f:facet>
+									<f:facet name="input">
+										<p:inputText value="#{shipment_base.description}" style="width:98%" />
+									</f:facet>
+								</p:cellEditor>
+							</p:column>
+							<p:column headerText="#{msgs['base.latitude']}">
+								<p:cellEditor>
+									<f:facet name="output">
+										<h:outputText value="#{shipment_base.latitude}" />
+									</f:facet>
+									<f:facet name="input">
+										<p:inputText value="#{shipment_base.latitude}" style="width:98%" />
+									</f:facet>
+								</p:cellEditor>
+							</p:column>
+							<p:column headerText="#{msgs['base.longitude']}">
+								<p:cellEditor>
+									<f:facet name="output">
+										<h:outputText value="#{shipment_base.longitude}" />
+									</f:facet>
+									<f:facet name="input">
+										<p:inputText value="#{shipment_base.longitude}" style="width:98%" />
+									</f:facet>
+								</p:cellEditor>
+							</p:column>
+							<p:column headerText="#{msgs['base.icon']}">
+								<p:cellEditor>
+									<f:facet name="output">
+										<h:outputText value="#{shipment_base.icon}" />
+									</f:facet>
+									<f:facet name="input">
+										<p:inputText value="#{shipment_base.icon}" style="width:98%" />
+									</f:facet>
+								</p:cellEditor>
+							</p:column>
+							<p:column style="width:30px; text-align: center; float:center" rendered="#{loginController.hasAccessTo(enumBean.modelBases, enumBean.accessEdit)}">
+								<f:facet name="header">
+									<i class="fa fa-edit" />
+								</f:facet>
+
+								<p:rowEditor style="text-align: center; float:center" />
+							</p:column>
+						</p:dataTable>
+					</h:form>
+			</p:outputPanel>
+
+			<p:outputPanel rendered="#{!loginController.hasAccessTo(enumBean.modelBases, enumBean.accessView)}">
+				<ui:include src="disallowpage.xhtml" />
+			</p:outputPanel>
+		</ui:define>
+	</ui:composition>
+</h:body>
+</html>

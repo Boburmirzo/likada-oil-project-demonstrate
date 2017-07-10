@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:h="http://java.sun.com/jsf/html" xmlns:f="http://java.sun.com/jsf/core" xmlns:ui="http://java.sun.com/jsf/facelets" xmlns:p="http://primefaces.org/ui">
+<h:body>
+    <ui:composition template="/layout/forcab.xhtml">
+        <ui:define name="windowTitle">#{msgs['product.title']}</ui:define>
+        <ui:define name="content">
+
+            <style type="text/css">
+                .singleLine
+                {
+                    text-wrap:none;
+                    white-space:nowrap;
+                    overflow:hidden;
+                    text-overflow:ellipsis;
+                }
+            </style>
+
+            <div class="page_title">#{msgs['drive.title']}</div>
+
+            <p:dialog id="dialog_delete_drive" header="Удаление состояние" widgetVar="dlg_delete_drive" resizable="false" modal="true" draggable="false" showEffect="fade" hideEffect="explode">
+                <h:form id="form_delete_drive">
+                    <h:panelGrid columns="1" cellpadding="5" style="width: 100%;">
+                        <h:outputLabel value="Вы действительно хотите удалить данный рейс?" />
+                        <h:outputLabel style="font-weight: bold;" value="Статус товара: #{driveBackingBean.selectedDrive.driveSerial} Рейс.: #{driveBackingBean.selectedDrive.driveStatus.name}" />
+                        <h:panelGrid columns="2" cellpadding="5" style="margin: 0 auto;">
+                            <p:commandButton icon="fa fa-times-circle fa-fw fa-fvm" value="Удалить" update=":form_drives:table_drives" actionListener="#{driveController.buttonActionRemoveDrive}"  oncomplete="PF('dlg_delete_drive').hide();" />
+                            <p:commandButton value="Отмена" onclick="PF('dlg_delete_drive').hide();" />
+                        </h:panelGrid>
+                    </h:panelGrid>
+                </h:form>
+            </p:dialog>
+
+            <p:dialog id="dialog_update_driveStatesDistances" header="Обновление расстояний" widgetVar="dlg_update_driveStatesDistances" onShow="refreshStatesDistance()" resizable="false" modal="true" draggable="false" closable="false">
+                <h:form id="form_update_driveStatesDistances">
+                    <h:panelGrid columns="1" cellpadding="5" style="margin: 0 auto;">
+                        <p:graphicImage name="icons/processing.gif"/>
+                    </h:panelGrid>
+                    <p:remoteCommand name="refreshStatesDistance"  update=":form_drives:table_drives" actionListener="#{driveController.refreshStatesDistance}" oncomplete="PF('dlg_update_driveStatesDistances').hide();"/>
+                </h:form>
+            </p:dialog>
+
+            <h:form id="form_drives">
+                <p:menubar id="itemsCommandsForDrives">
+                    <p:menuitem value="Добавить"
+                                icon="fa fa-plus-circle fa-fw fa-fvm"
+                                actionListener="#{driveController.buttonActionAddNewDrive}"
+                                process="@this"
+                                update="form_drives:table_drives"/>
+                    <p:menuitem value="Удалить" icon="fa fa-times-circle fa-fw fa-fvm"
+                                onclick="PF('dlg_delete_drive').show();" update="form_delete_drive"
+                                disabled="#{driveBackingBean.selectedDrive==null}">
+                    </p:menuitem>
+                </p:menubar>
+
+                <div style="height: 5px;" />
+                <p:dataTable id="table_drives" rowExpandMode="single" var="drive" value="#{driveController.getDrives()}" selectionMode="single" selection="#{driveBackingBean.selectedDrive}" rowKey="#{drive.id}" paginator="true" paginatorAlwaysVisible="true"  rows="5"
+                             paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}" currentPageReportTemplate="Клиентов всего {totalRecords}. Страница {currentPage} из {totalPages}" emptyMessage="Не найдено">
+
+                    <p:ajax event="rowSelect" update=":form_drives:itemsCommandsForDrives" />
+                    <p:ajax event="rowUnselect" update=":form_drives:itemsCommandsForDrives" />
+
+
+                    <p:column style="width:40px; text-align: center;" priority="1">
+                        <f:facet name="header">
+                            <i class="fa fa-edit" />
+                        </f:facet>
+                        <p:splitButton actionListener="#{driveController.editDrive(drive)}" icon="fa fa-edit">
+                            <p:menuitem icon="fa fa-refresh fa-fw fa-fvm" value="Обновить расстояний" actionListener="#{driveController.setDriveForDistanceUpdate(drive)}" onclick="PF('dlg_update_driveStatesDistances').show();" />
+                        </p:splitButton>
+                    </p:column>
+
+                    <p:column headerText="#{msgs['drive.driveSerialNumber']}" style="width:50px;">
+                        <h:outputText value="#{drive.driveSerial}" />
+                    </p:column>
+
+
+                    <p:column headerText="#{msgs['drive.driveStatus']}">
+                        <h:outputText value="#{drive.driveStatus.name}" />
+                    </p:column>
+
+                    <p:column headerText="#{msgs['drive.driveProdcut']}">
+                        <h:outputText  value="#{drive.productName}" />
+                    </p:column>
+
+                    <p:column headerText="#{msgs['drive.company']}" styleClass="singleLine" style="height: 10px; font-size: 9pt;">
+                        <h:outputText value="#{drive.company.nameShort}" />
+                    </p:column>
+
+                    <p:column headerText="#{msgs['drive.driveState']}" styleClass="singleLine" style="height: 10px; font-size: 9pt;">
+                        <h:outputText  value="#{driveService.getCurrentStateOfDriveObject(drive.getDriveStatesList()).driveStateType.name}"/>
+                         <p:rowToggler id="toggler_driveStateHistory"/>
+                    </p:column>
+
+                    <p:column headerText="#{msgs['driveState.distance']}">
+                        <h:outputText value="#{drive.driveStatesList.get(0).distance}" />
+                    </p:column>
+
+                    <p:column headerText="#{msgs['drive.receiver']}" styleClass="singleLine" style="height: 10px; font-size: 9pt;">
+                        <h:outputText value="#{drive.receiver.nameShort}" />
+                    </p:column>
+
+                    <p:column headerText="#{msgs['drive.vehicleNumber']}">
+                        <h:outputText value="#{drive.vehicle.truck.govNumber}"/>
+                    </p:column>
+
+                    <p:column headerText="#{msgs['drive.logistian']}">
+                        <h:outputText value="#{drive.logistician.title}" />
+                    </p:column>
+
+                    <p:column headerText="#{msgs['drive.driverFullname']}">
+                        <h:outputText value="#{drive.driver.title}" />
+                    </p:column>
+
+                    <!--<p:column headerText="#{msgs['drive.driveStateHistory']}" style="width:70px;">-->
+                        <!--<p:rowToggler id="toggler_driveStateHistory"/>-->
+                    <!--</p:column>-->
+
+                    <p:rowExpansion id="row_expension_driveStateHistory">
+                        <h:form id="form_driveStateShow">
+
+                            <p:dataTable id="table_driveStatesForDrive" var="driveState" value="#{drive.getDriveStatesList()}" selectionMode="single" rowKey="#{driveState}" emptyMessage="Не найдено">
+
+                                <p:column headerText="#{msgs['driveState.dataAndTime']}">
+                                    <h:outputText value="#{driveState.modifiedDate}">
+                                        <f:convertDateTime pattern="MM.dd.yyyy HH:mm" />
+                                    </h:outputText>
+                                </p:column>
+
+                                <p:column headerText="#{msgs['driveState.status']}" >
+                                    <h:outputText value="#{driveState.driveStateType.name}" />
+                                </p:column>
+
+                                <p:column headerText="#{msgs['driveState.objectData']}"  >
+                                    <h:outputText value="#{driveState.jsonData}" />
+                                </p:column>
+
+                                <p:column headerText="#{msgs['driveState.description']}" >
+                                    <h:outputText value="#{driveState.description}"/>
+                                </p:column>
+
+                                <p:column headerText="#{msgs['driveState.responsible']}" >
+                                    <h:outputText value="#{driveState.responsible.title} (#{driveState.responsible.userRoles.get(0).name})"/>
+                                </p:column>
+
+                            </p:dataTable>
+                        </h:form>
+                    </p:rowExpansion>
+
+                </p:dataTable>
+            </h:form>
+        </ui:define>
+    </ui:composition>
+</h:body>
+</html>

@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" 
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:h="http://java.sun.com/jsf/html" xmlns:f="http://java.sun.com/jsf/core" xmlns:ui="http://java.sun.com/jsf/facelets" xmlns:p="http://primefaces.org/ui">
+<h:body>
+	<ui:composition template="/layout/forcab.xhtml">
+		<ui:define name="windowTitle">#{msgs['vehicles']}</ui:define>
+		<ui:define name="content">
+		<ui:param name="canAddVehicles" value="#{loginController.hasAccessTo(enumBean.modelVehicle, enumBean.accessAdd)}" />
+		<ui:param name="canDeleteVehicles" value="#{loginController.hasAccessTo(enumBean.modelVehicle, enumBean.accessDelete)}" />
+		<ui:param name="canEditVehicles" value="#{loginController.hasAccessTo(enumBean.modelVehicle, enumBean.accessEdit)}" />
+
+		<p:outputPanel rendered="#{loginController.hasAccessTo(enumBean.modelVehicle, enumBean.accessView) or loginController.hasAccessTo(enumBean.modelVehicle, enumBean.accessEdit)}">
+
+			<p:dialog id="dialog_delete_vehicle" header="Удаление машины" widgetVar="dlg_delete_vehicle" resizable="false" modal="true" draggable="false">
+				<h:form id="form_vehicle_delete">
+					<p:growl id="growl" showDetail="true"/>
+					<h:panelGrid columns="1" cellpadding="5" style="width: 100%;">
+						<h:outputLabel value="Вы действительно хотите удалить данную машину?" />
+						<h:panelGrid columns="2">
+							<h:outputLabel style="font-weight: bold;" value="#{msgs['vehicles.title']}: #{vehicleBackingBean.selectedVehicle.truck.title}, " />
+							<h:outputLabel style="font-weight: bold;" value="#{msgs['vehicles.id']}: #{vehicleBackingBean.selectedVehicle.id}" />
+						</h:panelGrid>
+						<h:panelGrid columns="2" cellpadding="5" style="margin: 0 auto;">
+							<p:commandButton icon="fa fa-times-circle fa-fw fa-fvm" value="Удалить" update=":form_vehicle_delete:growl :form_edit_vehicles :form_edit_vehicles" actionListener="#{vehicleController.deleteSelectedVehicle}" oncomplete="PF('dlg_delete_vehicle').hide();"/>
+							<p:commandButton value="Отмена" onclick="PF('dlg_delete_vehicle').hide();" />
+						</h:panelGrid>
+					</h:panelGrid>
+				</h:form>
+			</p:dialog>
+
+			<h:form id="form_edit_vehicles">
+                <p:menubar id="toolbar_vehicles">
+                    <p:menuitem value="Добавить" icon="fa fa-plus-circle fa-fw fa-fvm" actionListener="#{vehicleController.buttonActionAddVehicle}" rendered="#{canAddVehicles}"/>
+                    <p:menuitem value="Удалить" icon="fa fa-times-circle fa-fw fa-fvm" onclick="PF('dlg_delete_vehicle').show();" update=":form_vehicle_delete" rendered="#{canDeleteVehicles}" disabled="#{vehicleBackingBean.selectedVehicle == null or vehicleController.isVehicleConnectedWithAnyVehicleWithDriver(vehicleBackingBean.selectedVehicle)}"/>
+				</p:menubar>
+                <div style="height: 5px;" />
+
+				<p:dataTable id="table_vehicles" widgetVar="tableVehicles" style="width:100%;" var="vehicle" value="#{vehicleController.vehicles}" selectionMode="single" selection="#{vehicleBackingBean.selectedVehicle}" rowKey="#{vehicle.id}" sortBy="#{vehicle.truck.title}" filteredValue="#{vehicleBackingBean.filtredVehicleList}"
+							 rows="25" rowsPerPageTemplate="10,25,50,100" paginator="true" paginatorAlwaysVisible="true" paginatorTemplate="{CurrentPageReport} {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}" currentPageReportTemplate="Машин всего {totalRecords}. Страница {currentPage} из {totalPages}" emptyMessage="Нет записей">
+
+					<p:ajax event="rowSelect" update=":form_edit_vehicles:toolbar_vehicles" />
+					<p:ajax event="rowUnselect" update=":form_edit_vehicles:toolbar_vehicles" />
+					<p:ajax event="rowDblselect" listener="#{vehicleController.buttonActionEditSelectedVehicle}" disabled="#{!canEditVehicles}" />
+
+					<f:facet name="header">
+						<p:outputPanel style="text-align: right">
+							<h:outputText value="Поиск по машинам: "/>
+							<p:inputText id="globalFilter" onkeyup="PF('tableVehicles').filter()" style="width:150px;horiz-align: right"/>
+						</p:outputPanel>
+					</f:facet>
+
+					<p:column style="width:20px; text-align: center;" priority="1" rendered="#{canEditVehicles}" >
+						<f:facet name="header">
+							<i class="fa fa-edit" />
+						</f:facet>
+						<p:commandButton icon="fa fa-edit" actionListener="#{vehicleController.editVehicle(vehicle)}"/>
+					</p:column>
+
+					<p:column headerText="#{msgs['vehicles.title']}" style="white-space:nowrap;" priority="2" filterBy="#{vehicle.truck.title}" filterMatchMode="contains" filterStyle="display:none">
+						<h:outputText value="#{vehicle.truck.title}" />
+					</p:column>
+
+					<p:column headerText="#{msgs['vehicles.autograph']}" style="white-space:nowrap;" priority="2" filterBy="#{vehicle.truck.title}" filterMatchMode="contains" filterStyle="display:none">
+						<p:outputPanel style="text-align: center;" rendered="#{vehicle.autographDeviceID != null}">
+							<i class="fa fa-check-square-o" />
+						</p:outputPanel>
+					</p:column>
+
+					<p:column headerText="#{msgs['vehicles.govNumber']}" style="white-space:nowrap;" priority="1" filterBy="#{vehicle.truck.govNumber}" filterMatchMode="contains" filterStyle="display:none">
+						<h:outputText value="#{vehicle.truck.govNumber}" />
+					</p:column>
+
+					<p:column headerText="#{msgs['vehicles.trailerGovNumber']}" style="white-space:nowrap;" priority="1" filterBy="#{vehicle.trailer.govNumber}" filterMatchMode="contains" filterStyle="display:none">
+						<h:outputText value="#{vehicle.trailer.govNumber}" />
+					</p:column>
+
+					<p:column headerText="#{msgs['vehicles.carrier']}" style="white-space:nowrap;" priority="1" filterBy="#{vehicle.carrier.nameShort}" filterMatchMode="contains" filterStyle="display:none">
+						<h:outputText value="#{vehicle.carrier.nameShort}" style="white-space:nowrap;" />
+					</p:column>
+
+					<p:column headerText="#{msgs['vehicles.logistician']}" style="white-space:nowrap;" priority="1" filterBy="#{vehicle.logistician.title}" filterMatchMode="contains" filterStyle="display:none">
+						<h:outputText value="#{vehicle.logistician.title}" />
+					</p:column>
+
+					<!--<p:column headerText="#{msgs['vehicles.status']}" style="white-space:nowrap;" priority="1" filterBy="#{vehicle.status.mechanicalStatus.mehahicalStatusTitle}" filterMatchMode="contains" filterStyle="display:none">-->
+						<!--<p:panelGrid  columns="2" cellpadding="0" cellspacing="0">-->
+                         <!--<p:row>-->
+							 <!--<p:column>-->
+
+							 <!--</p:column>-->
+							 <!--<p:column>-->
+
+							 <!--</p:column>-->
+						 <!--</p:row>-->
+							<!--<p:row>-->
+								<!--<p:column>-->
+
+								<!--</p:column>-->
+							<!--</p:row>-->
+						<!--<h:outputText value="#{vehicle.logistician.title}" />-->
+						<!--</p:panelGrid>-->
+					<!--</p:column>-->
+
+					<p:column headerText="#{msgs['vehicles.trailerBottomLoading']}" style="white-space:nowrap;" priority="2">
+						<p:outputPanel style="text-align: center;" rendered="#{vehicle.trailer.bottomLoading}">
+							<i class="fa fa-check-square-o" />
+						</p:outputPanel>
+					</p:column>
+
+					<p:column headerText="#{msgs['vehicles.trailerCalibration']}" style="white-space:nowrap;" priority="2">
+						<h:outputText value="#{vehicle.trailer.calibration}">
+							<f:convertNumber groupingUsed="true" minFractionDigits="0" />
+						</h:outputText>
+					</p:column>
+
+					<p:column headerText="#{msgs['vehicles.trailerBottomLoadingCalibration']}" style="white-space:nowrap;" priority="2">
+						<h:outputText value="#{vehicle.trailer.bottomLoadingCalibration}">
+							<f:convertNumber groupingUsed="true" minFractionDigits="0" />
+						</h:outputText>
+					</p:column>
+
+					<p:column headerText="#{msgs['vehicles.trailerCapacity']}"  style="white-space:nowrap;" priority="2">
+						<h:outputText value="#{vehicle.trailer.capacity}">
+							<f:convertNumber groupingUsed="true" minFractionDigits="0" />
+						</h:outputText>
+					</p:column>
+
+					<p:column headerText="#{msgs['vehicles.brand']}" style="white-space:nowrap;" priority="2" >
+						<h:outputText value="#{vehicle.truck.brand}"/>
+					</p:column>
+				</p:dataTable>
+			</h:form>
+			</p:outputPanel>
+			<p:outputPanel rendered="#{!loginController.hasAccessTo(enumBean.modelVehicle, enumBean.accessView)}">
+				<ui:include src="disallowpage.xhtml" />
+			</p:outputPanel>
+		</ui:define>
+	</ui:composition>
+</h:body>
+</html>

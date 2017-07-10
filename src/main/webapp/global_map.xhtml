@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" 
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:h="http://java.sun.com/jsf/html" xmlns:f="http://java.sun.com/jsf/core"
+	  xmlns:ui="http://java.sun.com/jsf/facelets" xmlns:p="http://primefaces.org/ui"
+	  xmlns:c="http://java.sun.com/jsp/jstl/core">
+<h:body>
+	<ui:composition template="/layout/forcab.xhtml">
+		<ui:define name="windowTitle">Карта</ui:define>
+		<ui:define name="content">
+			<script type="text/javascript" src="resources/scripts/maputils.js"/>
+			<p:dialog id="dialog_filter" widgetVar="dlg_filter" header="Установка фильтра" resizable="false" modal="true" draggable="false" position="center top">
+				<h:form id="form_filter">
+					<p:scrollPanel mode="native" style="max-height:500px">
+						<p:tree value="#{globalMapController.filterTreeRoot}" var="filter"
+								selectionMode="checkbox"
+								selection="#{globalMapBackingBean.selectedNodes}">
+							<p:treeNode type="shipment_base" icon="fa fa-birthday-cake">
+								<h:outputText value="#{filter.name}"/>
+							</p:treeNode>
+							<p:treeNode type="vehicle" icon="fa fa-car">
+								<h:outputText value="#{filter.name}"/>
+							</p:treeNode>
+						</p:tree>
+					</p:scrollPanel>
+					<p:commandButton value="Сохранить" update="form_map" actionListener="#{globalMapController.buttonFilter()}" oncomplete="PF('dlg_filter').hide();refreshMapData(args);PF('refresh_polling').start();"/>
+					<p:commandButton value="Отмена" onclick="PF('dlg_filter').hide();" />
+				</h:form>
+			</p:dialog>
+
+			<p:dialog id="dialog_build_track" widgetVar="dlg_build_track" header="Построение трэка" resizable="false" modal="true" draggable="false">
+				<h:form id="form_build_track">
+					<h:panelGrid columns="1" cellpadding="5" style="width: 100%;">
+						<h:outputLabel style="font-weight: bold;" value="Построить трэк для" />
+						<h:panelGrid columns="2" cellpadding="5">
+							<h:outputLabel style="font-weight: bold;" value="машины" />
+							<p:selectOneMenu style="width:176px" value="#{globalMapBackingBean.selectedVehicle}" filter="true" filterMatchMode="startsWith" converter="vehicleConverter">
+								<f:selectItems value="#{globalMapBackingBean.vehicleList}" var="vehicle" itemLabel="#{vehicle.truck.govNumber}" itemValue="#{vehicle}" />
+							</p:selectOneMenu>
+
+							<h:outputLabel style="font-weight: bold;" value="с" />
+							<p:calendar id="date_from" value="#{globalMapBackingBean.selectedTrack.dateFrom}" pattern="dd.MM.yyyy HH:mm" locale="ru" maxdate="#{globalMapBackingBean.selectedTrack.dateTo}">
+								<p:ajax event="dateSelect" update="date_to"/>
+							</p:calendar>
+
+							<h:outputLabel style="font-weight: bold;" value="по" />
+							<p:calendar id="date_to" value="#{globalMapBackingBean.selectedTrack.dateTo}" pattern="dd.MM.yyyy HH:mm" locale="ru" mindate="#{globalMapBackingBean.selectedTrack.dateFrom}" maxdate="#{dateBean.now}" disabled="#{empty globalMapBackingBean.selectedTrack.dateFrom}">
+								<p:ajax event="dateSelect" update="date_from"/>
+							</p:calendar>
+						</h:panelGrid>
+						<h:panelGrid columns="2" cellpadding="5" styУle="margin: 0 auto;">
+							<p:commandButton value="Построить" update=":form_map" actionListener="#{globalMapController.buttonBuildTrack}" onstart="PF('refresh_polling').stop()" oncomplete="PF('dlg_build_track').hide();"/>
+							<p:commandButton value="Отмена" onclick="PF('dlg_build_track').hide();" />
+						</h:panelGrid>
+					</h:panelGrid>
+				</h:form>
+			</p:dialog>
+
+			<p:dialog id="dialog_vehicle_info" widgetVar="dlg_vehicle_info" header="Информация о машине" resizable="false" modal="true" draggable="false">
+				<h:form id="form_vehicle_info">
+					<h:panelGrid columns="2" cellpadding="5" style="width: 100%;">
+						<h:outputLabel value="Гос.номер: " />
+						<h:outputLabel value="#{globalMapBackingBean.selectedVehicle.truck.govNumber}" />
+
+						<h:outputLabel  value="Скорость: " />
+						<h:outputLabel  value="#{globalMapBackingBean.selectedVehicle.speed}" >
+							<f:convertNumber pattern="#0.0" />
+						</h:outputLabel>
+
+						<h:outputLabel  value="Зафиксированно в: " />
+						<h:outputText value="#{globalMapBackingBean.selectedVehicle.lastObservationDate}">
+							<f:convertDateTime pattern="dd.MM.yyyy HH:mm:ss" type="date" />
+						</h:outputText>
+					</h:panelGrid>
+				</h:form>
+			</p:dialog>
+
+
+
+			<h:form id="form_map">
+				<p:menubar id="toolbar_map">
+					<p:menuitem value="Фильтр" icon="fa fa-filter fa-fw fa-fvm" update=":form_filter" oncomplete="PF('dlg_filter').show();"/>
+					<p:menuitem value="Трэк" icon="fa fa-location-arrow" update=":form_build_track" oncomplete="PF('dlg_build_track').show()" rendered="#{autographBean.enabled}"/>
+				</p:menubar>
+				<div style="height: 5px;" />
+				<p:poll widgetVar="refresh_polling" interval="10" autoStart="false" listener="#{globalMapController.actionRefreshMapData}" oncomplete="refreshMapData(args)"/>
+				<p:remoteCommand name="eventMapMarkerSelected" actionListener="#{globalMapController.onMapMarkerSelected}" update=":dialog_vehicle_info" style="display: none;"/>
+				<p:gmap id="global_map" widgetVar="globalMap" center="#{globalMapBackingBean.currentLatitude}, #{globalMapBackingBean.currentLongitude}" zoom="#{globalMapBackingBean.currentZoom}" type="ROADMAP" model="#{globalMapBackingBean.globalMapModel}" style="width:100%;height:700px;">
+					<p:ajax event="stateChange" listener="#{globalMapController.onMapStateChanged}"/>
+				</p:gmap>
+				<p:outputPanel>
+					<p:panelGrid columns="9" layout="grid" rendered="#{!globalMapBackingBean.isOnline()}">
+						<f:facet name="footer">
+							<h:outputText style="margin-right:10px" value="Трек: "/>
+							<h:outputText  style="margin-right:10px" value="#{globalMapBackingBean.selectedTrack.vehicle.truck.govNumber}"/>
+							<h:outputText  style="margin-right:10px" value=" c "/>
+							<h:outputText  style="margin-right:10px" value="#{globalMapBackingBean.selectedTrack.dateFrom}">
+								<f:convertDateTime pattern="dd.MM.yyyy HH:mm:ss" type="date" />
+							</h:outputText>
+							<h:outputText  style="margin-right:10px" value=" по "/>
+							<h:outputText  style="margin-right:10px" value="#{globalMapBackingBean.selectedTrack.dateTo}">
+								<f:convertDateTime pattern="dd.MM.yyyy HH:mm:ss" type="date" />
+							</h:outputText>
+							<h:outputText  style="margin-right:10px" value=" расстояние "/>
+							<h:outputLabel  value="#{globalMapBackingBean.selectedTrack.distance}" >
+								<f:convertNumber pattern="#0.00" />
+							</h:outputLabel>
+							<h:outputText  style="margin-right:10px" value=" км"/>
+						</f:facet>
+					</p:panelGrid>
+				</p:outputPanel>
+			</h:form>
+		</ui:define>
+	</ui:composition>
+</h:body>
+</html>

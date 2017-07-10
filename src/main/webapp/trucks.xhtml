@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" 
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:h="http://java.sun.com/jsf/html" xmlns:f="http://java.sun.com/jsf/core" xmlns:ui="http://java.sun.com/jsf/facelets" xmlns:p="http://primefaces.org/ui">
+<h:body>
+	<ui:composition template="/layout/forcab.xhtml">
+		<ui:define name="windowTitle">#{msgs['trucks']}</ui:define>
+		<ui:define name="content">
+		<ui:param name="canAddTrucks" value="#{loginController.hasAccessTo(enumBean.modelTruck, enumBean.accessAdd)}" />
+		<ui:param name="canDeleteTrucks" value="#{loginController.hasAccessTo(enumBean.modelTruck, enumBean.accessDelete)}" />
+		<ui:param name="canEditTrucks" value="#{loginController.hasAccessTo(enumBean.modelTruck, enumBean.accessEdit)}" />
+
+		<p:outputPanel rendered="#{loginController.hasAccessTo(enumBean.modelTruck, enumBean.accessView) or loginController.hasAccessTo(enumBean.modelTruck, enumBean.accessEdit)}">
+
+			<p:dialog id="dialog_delete_truck" header="Удаление тягача" widgetVar="dlg_delete_truck" resizable="false" modal="true" draggable="false">
+				<h:form id="form_truck_delete">
+					<p:growl id="growl" showDetail="true"/>
+					<h:panelGrid columns="1" cellpadding="5" style="width: 100%;">
+						<h:outputLabel value="Вы действительно хотите удалить данный тягач?" />
+						<h:panelGrid columns="2">
+							<h:outputLabel style="font-weight: bold;" value="#{msgs['trucks.title']}: #{truckBackingBean.selectedTruck.title}, " />
+							<h:outputLabel style="font-weight: bold;" value="#{msgs['trucks.id']}: #{truckBackingBean.selectedTruck.id}" />
+						</h:panelGrid>
+						<h:panelGrid columns="2" cellpadding="5" style="margin: 0 auto;">
+							<p:commandButton icon="fa fa-times-circle fa-fw fa-fvm" value="Удалить" update=":form_truck_delete:growl :form_edit_trucks:toolbar_trucks :form_edit_trucks:table_trucks" actionListener="#{truckController.deleteSelectedTruck}" oncomplete="PF('dlg_delete_truck').hide();"/>
+							<p:commandButton value="Отмена" onclick="PF('dlg_delete_truck').hide();" />
+						</h:panelGrid>
+					</h:panelGrid>
+				</h:form>
+			</p:dialog>
+
+			<p:dialog id="dialog_edit_truck" header="Редактирование тягача" widgetVar="dlg_edit_truck" resizable="false" modal="true" draggable="false">
+				<h:form id="form_truck_edit">
+					<h:panelGrid columns="1" cellpadding="5" style="width: 100%;">
+						<h:panelGrid columns="2" cellpadding="5">
+							<h:outputLabel  value="#{msgs['trucks.title']}" />
+							<p:inputText value="#{truckBackingBean.selectedTruck.title}" />
+
+							<h:outputLabel value="#{msgs['trucks.brand']}" />
+							<p:inputText value="#{truckBackingBean.selectedTruck.brand}" />
+
+							<h:outputLabel  value="#{msgs['trucks.model']}" />
+							<p:inputText value="#{truckBackingBean.selectedTruck.model}" />
+
+							<h:outputLabel  value="#{msgs['trucks.govNumber']}" />
+							<p:inputText value="#{truckBackingBean.selectedTruck.govNumber}" />
+
+							<h:outputLabel value="#{msgs['trucks.description']}" />
+							<p:inputTextarea rows="3" value="#{truckBackingBean.selectedTruck.description}" />
+						</h:panelGrid>
+						<h:panelGrid columns="2" cellpadding="5" style="margin: 0 auto;">
+							<p:commandButton value="Сохранить" update=":form_truck_delete:growl :form_edit_trucks:toolbar_trucks :form_edit_trucks:table_trucks" actionListener="#{truckController.buttonActionSaveTruck}" oncomplete="PF('dlg_edit_truck').hide();PF('tableTrucks').filter()"/>
+							<p:commandButton value="Отмена" onclick="PF('dlg_edit_truck').hide();" />
+						</h:panelGrid>
+					</h:panelGrid>
+				</h:form>
+			</p:dialog>
+
+			<h:form id="form_edit_trucks">
+				<p:menubar id="toolbar_trucks">
+					<p:menuitem value="Добавить" icon="fa fa-plus-circle fa-fw fa-fvm" actionListener="#{truckController.makeNewSelectedTruck}" update=":form_truck_edit" oncomplete="PF('dlg_edit_truck').show();" rendered="#{canAddTrucks}"/>
+					<p:menuitem value="Удалить" icon="fa fa-times-circle fa-fw fa-fvm" onclick="PF('dlg_delete_truck').show();" update=":form_truck_delete" rendered="#{canDeleteTrucks}" disabled="#{truckBackingBean.selectedTruck == null or truckController.isTruckConnectedWithAnyVehicle(truckBackingBean.selectedTruck)}"/>
+				</p:menubar>
+				<div style="height: 5px;" />
+
+				<p:dataTable id="table_trucks" widgetVar="tableTrucks" style="width:100%;" var="truck" value="#{truckController.trucks}" selectionMode="single" selection="#{truckBackingBean.selectedTruck}" rowKey="#{truck.id}" sortBy="#{truck.title}" filteredValue="#{truckBackingBean.filtredTruckList}"
+							 rows="25" rowsPerPageTemplate="10,25,50,100" paginator="true" paginatorAlwaysVisible="true" paginatorTemplate="{CurrentPageReport} {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}" currentPageReportTemplate="Тягачей всего {totalRecords}. Страница {currentPage} из {totalPages}" emptyMessage="Нет записей">
+
+					<p:ajax event="rowSelect" update=":form_edit_trucks:toolbar_trucks" />
+					<p:ajax event="rowUnselect" update=":form_edit_trucks:toolbar_trucks" />
+					<p:ajax event="rowDblselect" oncomplete="PF('dlg_edit_truck').show();" update=":form_truck_edit" disabled="#{!canDeleteTrucks}"/>
+
+					<f:facet name="header">
+						<p:outputPanel style="text-align: right">
+							<h:outputText value="Поиск по тягачам: "/>
+							<p:inputText id="globalFilter" onkeyup="PF('tableTrucks').filter()" style="width:150px;horiz-align: right"/>
+						</p:outputPanel>
+					</f:facet>
+
+					<p:column style="width:20px; text-align: center;" priority="1" rendered="#{canEditTrucks}">
+						<f:facet name="header">
+							<i class="fa fa-edit" />
+						</f:facet>
+						<p:commandButton icon="fa fa-edit" oncomplete="PF('dlg_edit_truck').show();" update=":form_truck_edit" actionListener="#{truckController.selectTruck(truck)}"/>
+					</p:column>
+
+					<p:column headerText="#{msgs['trucks.title']}" style="white-space:nowrap;" priority="2" filterBy="#{truck.title}" filterMatchMode="contains" filterStyle="display:none">
+						<h:outputText value="#{truck.title}" />
+					</p:column>
+
+					<p:column headerText="#{msgs['trucks.brand']}" style="white-space:nowrap;" priority="1">
+						<h:outputText value="#{truck.brand}" />
+					</p:column>
+
+					<p:column headerText="#{msgs['trucks.model']}" style="white-space:nowrap;" priority="2">
+						<h:outputText value="#{truck.model}" />
+					</p:column>
+
+					<p:column headerText="#{msgs['trucks.govNumber']}" style="white-space:nowrap;" priority="1" filterBy="#{truck.govNumber}" filterMatchMode="contains" filterStyle="display:none">
+						<h:outputText value="#{truck.govNumber}" />
+					</p:column>
+
+					<p:column headerText="#{msgs['trucks.description']}" style="white-space:nowrap;" priority="3" filterBy="#{truck.description}" filterMatchMode="contains" filterStyle="display:none">
+						<h:outputText value="#{truck.description}"/>
+					</p:column>
+				</p:dataTable>
+			</h:form>
+		</p:outputPanel>
+
+		<p:outputPanel rendered="#{!loginController.hasAccessTo(enumBean.modelTruck, enumBean.accessView)}">
+			<ui:include src="disallowpage.xhtml" />
+		</p:outputPanel>
+		</ui:define>
+	</ui:composition>
+</h:body>
+</html>

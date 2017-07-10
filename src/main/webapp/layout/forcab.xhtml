@@ -1,0 +1,60 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:h="http://java.sun.com/jsf/html" xmlns:f="http://java.sun.com/jsf/core" xmlns:ui="http://java.sun.com/jsf/facelets" xmlns:p="http://primefaces.org/ui">
+<h:head>
+	<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+	<meta name="viewport" content="user-scalable=no, width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+	<meta name="apple-mobile-web-app-capable" content="yes" />
+	<h:outputStylesheet library="css" name="default.css" />
+	<h:outputScript library="scripts" name="pfloc_ru.js" />
+	<title><ui:insert name="windowTitle" /></title>
+	<link href="" rel="shortcut icon" type="image/vnd.microsoft.icon" />
+	<ui:insert name="pagehead" />
+	<script src="http://maps.google.com/maps/api/js?key=AIzaSyDFNp3ZPdwh8mE5fQctgDTgvG8GWcg-ZKo" type="text/javascript"></script> <!--For google services support-->
+</h:head>
+<h:body>
+	<ui:define name="allowBlockPage">
+		У Вас нет прав для просмотра данной страницы
+	</ui:define>
+	<div id="default_main">
+		<table border="0" width="100%">
+			<tr>
+				<td colspan="2">
+					<div id="default_heading">
+						<ui:insert name="heading">
+							<ui:include src="/layout/heading.xhtml" />
+						</ui:insert>
+					</div>
+				</td>
+			</tr>
+			<tr>
+				<td colspan="2" valign="top">
+					<div id="forcab_content">
+						<ui:insert name="content" />
+					</div>
+				</td>
+			</tr>
+			<tr>
+				<td colspan="2"><div id="default_footer">
+					<ui:include src="/layout/footer.xhtml" />
+				</div></td>
+			</tr>
+		</table>
+		<p:ajaxStatus style="width:31px;height:31px;position:fixed;right:5px;bottom:5px">
+			<f:facet name="start">
+				<p:graphicImage value="/images/FhHRx.gif" />
+			</f:facet>
+
+			<f:facet name="complete">
+				<h:outputText value="" />
+			</f:facet>
+		</p:ajaxStatus>
+		<ui:debug />
+
+
+	</div>
+</h:body>
+</html>
+
+

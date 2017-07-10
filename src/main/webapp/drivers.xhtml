@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" 
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:h="http://java.sun.com/jsf/html" xmlns:f="http://java.sun.com/jsf/core" xmlns:ui="http://java.sun.com/jsf/facelets" xmlns:p="http://primefaces.org/ui">
+<h:body>
+	<ui:composition template="/layout/forcab.xhtml">
+		<ui:define name="windowTitle">#{msgs['drivers']}</ui:define>
+		<ui:define name="content">
+
+		<ui:param name="canAddDrivers" value="#{loginController.hasAccessTo(enumBean.modelDriver, enumBean.accessAdd)}" />
+		<ui:param name="canDeleteDrivers" value="#{loginController.hasAccessTo(enumBean.modelDriver, enumBean.accessDelete)}" />
+		<ui:param name="canEditDrivers" value="#{loginController.hasAccessTo(enumBean.modelDriver, enumBean.accessEdit)}" />
+		<p:outputPanel rendered="#{loginController.hasAccessTo(enumBean.modelDriver, enumBean.accessView) or loginController.hasAccessTo(enumBean.modelDriver, enumBean.accessEdit)}">
+
+			<p:dialog id="dialog_delete_drivers" header="Удаление водителя" widgetVar="dlg_delete_driver" resizable="false" modal="true" draggable="false" showEffect="fade">
+				<h:form id="form_driver_delete">
+					<h:panelGrid columns="1" cellpadding="5" style="width: 100%;">
+						<h:outputLabel value="Вы действительно хотите удалить данного водитиеля ?" />
+						<h:outputLabel style="font-weight: bold;" value="Водитель: #{driverBackingBean.selectedDriver.title} идент.: #{driverBackingBean.selectedDriver.id}" />
+						<h:panelGrid columns="2" cellpadding="5" style="margin: 0 auto;">
+							<p:commandButton icon="fa fa-times-circle fa-fw fa-fvm" value="Удалить" update=":form_edit_drivers" actionListener="#{driverController.deleteSelectedDriver}" oncomplete="PF('dlg_delete_driver').hide()" />
+							<p:commandButton value="Отмена" onclick="PF('dlg_delete_driver').hide();" />
+						</h:panelGrid>
+					</h:panelGrid>
+				</h:form>
+			</p:dialog>
+
+
+			<h:form id="form_edit_drivers">
+				<p:menubar id="toolbar_drivers">
+					<p:menuitem value="Добавить" icon="fa fa-plus-circle fa-fw fa-fvm" actionListener="#{driverController.buttonActionAddDriver}" update="table_drivers" rendered="#{canAddDrivers}"/>
+					<p:menuitem value="Удалить" icon="fa fa-times-circle fa-fw fa-fvm" onclick="PF('dlg_delete_driver').show();" update="form_driver_delete" rendered="#{canDeleteDrivers}" disabled="#{driverBackingBean.selectedDriver==null or driverController.isDriverConnectedWithAnyVehicleWithDriver(driverBackingBean.selectedDriver)}"/>
+				</p:menubar>
+				<div style="height: 5px;" />
+
+
+				<p:dataTable id="table_drivers" widgetVar="tableDrivers" style="width:100%;" var="driver" value="#{driverController.drivers}" selectionMode="single" selection="#{driverBackingBean.selectedDriver}" rowKey="#{driver.id}" sortBy="#{driver.title}" filteredValue="#{driverBackingBean.filtredDriverList}"
+							 rows="25" rowsPerPageTemplate="10,25,50,100" paginator="true" paginatorAlwaysVisible="true" paginatorTemplate="{CurrentPageReport} {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}" currentPageReportTemplate="Машин всего {totalRecords}. Страница {currentPage} из {totalPages}" emptyMessage="Нет записей">
+
+				<p:ajax event="rowSelect" update=":form_edit_drivers:toolbar_drivers" />
+					<p:ajax event="rowUnselect" update=":form_edit_drivers:toolbar_drivers" />
+					<p:ajax event="rowSelect" update=":form_edit_drivers:toolbar_drivers" />
+					<p:ajax event="rowDblselect" listener="#{driverController.buttonActionEditSelectedDriver}" disabled="#{!canEditDrivers}"/>
+
+					<f:facet name="header">
+						<p:outputPanel style="text-align: right">
+							<h:outputText value="Поиск по водителям: "/>
+							<p:inputText id="globalFilter" onkeyup="PF('tableDrivers').filter()" style="width:150px;horiz-align: right"/>
+						</p:outputPanel>
+					</f:facet>
+
+					<p:column style="width:20px; text-align: center;" priority="1" rendered="#{canEditDrivers}">
+						<f:facet name="header">
+							<i class="fa fa-edit" />
+						</f:facet>
+						<p:commandButton icon="fa fa-edit" actionListener="#{driverController.editDriver(driver)}"/>
+					</p:column>
+
+					<p:column headerText="#{msgs['drivers.title']}" style="white-space:nowrap;" priority="1" filterBy="#{driver.title}" filterMatchMode="contains" filterStyle="display:none">
+						<h:outputText value="#{driver.title}" />
+					</p:column>
+
+					<p:column headerText="#{msgs['drivers.fullName']}" style="white-space:nowrap;" priority="2" filterBy="#{driver.lastName}" filterMatchMode="contains" filterStyle="display:none">
+						<h:outputText value="#{driver.lastName} #{driver.firstName} #{driver.patronymic}" />
+					</p:column>
+
+					<p:column headerText="#{msgs['drivers.dateOfBirth']}" style="white-space:nowrap;" priority="1">
+						<h:outputText value="#{driver.dateOfBirth}">
+							<f:convertDateTime pattern="dd.MM.yyyy" locale="ru_RU" />
+						</h:outputText>
+					</p:column>
+
+					<p:column headerText="#{msgs['drivers.description']}" style="white-space:nowrap;" priority="3" filterBy="#{driver.description}" filterMatchMode="contains" filterStyle="display:none">
+						<h:outputText value="#{driver.description}" escape="false" />
+					</p:column>
+				</p:dataTable>
+			</h:form>
+		</p:outputPanel>
+
+		<p:outputPanel rendered="#{!loginController.hasAccessTo(enumBean.modelDriver, enumBean.accessView)}">
+			<ui:include src="disallowpage.xhtml" />
+		</p:outputPanel>
+		</ui:define>
+	</ui:composition>
+</h:body>
+</html>

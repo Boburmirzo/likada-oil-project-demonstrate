@@ -1,0 +1,359 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+		"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:h="http://java.sun.com/jsf/html" xmlns:f="http://java.sun.com/jsf/core"
+	  xmlns:ui="http://java.sun.com/jsf/facelets" xmlns:p="http://primefaces.org/ui">
+<h:body>
+	<ui:composition template="/layout/forcab.xhtml">
+		<ui:define name="windowTitle">#{msgs['edit_customer.title']}</ui:define>
+		<ui:define name="content">
+			<script type="text/javascript">
+                function reloadPage() {
+                    location.reload();
+                }
+                function handleChangeStatusRequest(xhr, status, args) {
+                    if (args.state == "desc") {
+                        PF('dlg_status_apply').show();
+                    } else if (args.state == "vehch") {
+                        PF('dlg_take_drive').show();
+                    } else if (args.state == "pmn") {
+                        PF('dlg_status_apply_wpn').show();
+                    } else {
+                        PF('dlg_status_apply').hide();
+                    }
+                }
+			</script>
+
+			<ui:param name="canEditSelectedCustomer" value="#{loginController.hasAccessTo(enumBean.modelCustomer, enumBean.accessEdit) or loginController.isCustomerSubordinateOfUser(customerBackingBean.selectedCustomer)}" />
+
+			<p:dialog style="width:50%; max-width: 95%; max-height: 95%; overflow: auto;" id="dialog_contractor_choice" widgetVar="dlg_contractor_choice" resizable="false" modal="true" draggable="false">
+				<h:form id="form_contractor_choice">
+					<p:menubar id="menubar_contractors_client">
+						<f:facet name="options">
+							<p:inputText id="searchContractorFieldStr" value="#{customerBackingBean.popupDialogSearchStringContractorByINN}" placeholder="Поиск по названию ИНН ОГРН" style="margin-right:10px">
+								<p:ajax event="keyup" update="table_contractors_client" listener="#{customerController.refreshContractorsTableInPopupDialog}" />
+							</p:inputText>
+							<p:commandButton type="button" icon="fa fa-close fa-fw">
+								<p:ajax event="click" listener="#{customerController.resetContractorsTableInPopupDialog}" update="form_contractor_choice" />
+							</p:commandButton>
+						</f:facet>
+					</p:menubar>
+
+					<div style="height: 5px;" />
+					<p:dataTable id="table_contractors_client" var="contractor" value="#{customerController.getNotLinkedContractorsForPopupDialog()}" selectionMode="single" selection="#{customerBackingBean.popupDialogSelectedContractor}" rowKey="#{contractor.id}" rows="20" paginator="true"
+								 paginatorTemplate="{CurrentPageReport} {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink}" currentPageReportTemplate="Контрагентов всего {totalRecords}. Страница {currentPage} из {totalPages}" emptyMessage="Не найдено">
+
+						<p:ajax event="rowSelect" update=":form_contractor_choice:buttonChoice_client" />
+						<p:ajax event="rowUnselect" update=":form_contractor_choice:buttonChoice_client" />
+						<p:ajax event="rowDblselect" listener="#{customerController.doubleClickSelectedRowInTableContractorsPopupDialog}" update=":form_edit_customer:table_contractors_current" onsuccess="PF('dlg_contractor_choice').hide();" />
+
+						<p:column headerText="#{msgs['contractor.contractorId']}" style="width:30px;" priority="3">
+							<h:outputText value="#{contractor.id}" />
+						</p:column>
+
+						<p:column style="width:20px; text-align: center;" priority="1">
+							<f:facet name="header">
+								<i class="fa fa-check" />
+							</f:facet>
+							<p:commandButton icon="fa fa-check" actionListener="#{customerController.addSelectedContractorFromPopupDialogToCustomer(contractor)}" update=":form_edit_customer:table_contractors_current" onsuccess="PF('dlg_contractor_choice').hide();" />
+						</p:column>
+
+						<p:column headerText="#{msgs['contractor.nameWork']}" style="white-space:nowrap;" priority="1">
+							<h:outputText value="#{contractor.nameWork}" />
+						</p:column>
+						<p:column headerText="#{msgs['contractor.nameShort']}" style="white-space:nowrap;" priority="2">
+							<h:outputText value="#{contractor.nameShort}" />
+						</p:column>
+						<p:column headerText="#{msgs['contractor.INN']}" style="white-space:nowrap;" priority="1">
+							<h:outputText value="#{contractor.inn}" />
+						</p:column>
+						<p:column headerText="#{msgs['contractor.OGRN']}" style="white-space:nowrap;" priority="3">
+							<h:outputText value="#{contractor.ogrn}" />
+						</p:column>
+					</p:dataTable>
+					<h:panelGrid columns="2" cellpadding="5" style="margin: 0 auto;">
+						<p:commandButton id="buttonChoice_client" icon="fa fa-check fa-fw fa-fvm" value="Выбор" update=":form_edit_customer:table_contractors_current" actionListener="#{customerController.doubleClickSelectedRowInTableContractorsPopupDialog}" oncomplete="PF('dlg_contractor_choice').hide();" disabled="#{customerBackingBean.popupDialogSelectedContractor==null}" />
+						<p:commandButton value="Отмена" onclick="PF('dlg_contractor_choice').hide();" />
+					</h:panelGrid>
+				</h:form>
+			</p:dialog>
+
+			<p:dialog style="width:50%; max-width: 95%; max-height: 95%; overflow: auto;" id="dialog_user_choice" header="Выбор пользователя" widgetVar="dlg_user_choice" resizable="false" modal="true" draggable="false">
+				<h:form id="form_user_choice">
+					<p:menubar id="itemsCommands">
+						<f:facet name="options">
+							<p:inputText id="searchUserFieldStr" value="#{customerBackingBean.popupDialogSearchStringUserForManager}" placeholder="Поиск имени" style="margin-right:10px">
+								<p:ajax event="keyup" update=":form_user_choice:table_users" listener="#{customerController.refreshUsersForManagersTableInPopupDialog}" />
+							</p:inputText>
+							<p:commandButton type="button" icon="fa fa-close fa-fw">
+								<p:ajax event="click" listener="#{customerController.resetUsersForManagerTableInPopupDialog}" update="form_user_choice" />
+							</p:commandButton>
+						</f:facet>
+					</p:menubar>
+
+					<div style="height: 5px;" />
+					<p:dataTable id="table_users" var="userForManager" value="#{customerController.getUsersForPopupDialogToAssignAsManagerToCustomer()}" selectionMode="single" selection="#{customerBackingBean.popupDialogSelectedUserForManager}" rowKey="#{userForManager.id}" rows="20" paginator="true"
+								 paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink}" currentPageReportTemplate="Страница {currentPage} из {totalPages}" emptyMessage="Не найдено">
+
+						<p:ajax event="rowSelect" update=":form_user_choice:buttonChoice" />
+						<p:ajax event="rowUnselect" update=":form_user_choice:buttonChoice" />
+						<p:ajax event="rowDblselect" listener="#{customerController.doubleClickSelectedRowInTableUserForManager}" update=":form_edit_customer:table_managers" onsuccess="PF('dlg_user_choice').hide();" />
+
+						<p:column headerText="Сокр" style="white-space:nowrap;" priority="1">
+							<h:outputText value="#{userForManager.title}" />
+						</p:column>
+
+						<p:column headerText="Тип" style="white-space:nowrap;" priority="1">
+							<ui:repeat var="role" value="#{userForManager.getUserRoles()}" varStatus="status">
+								<h:outputText value="#{role.name}" />
+								<h:outputText rendered="#{!status.last}" value=", " />
+							</ui:repeat>
+						</p:column>
+
+						<p:column headerText="ФИО" style="white-space:nowrap;" priority="2">
+							<h:outputText value="#{userForManager.firstName} #{userForManager.lastName} #{userForManager.patronymic}" />
+						</p:column>
+
+						<p:column headerText="Имя пользователя" style="white-space:nowrap;" priority="2">
+							<h:outputText value="#{userForManager.username}" />
+						</p:column>
+
+						<p:column headerText="Активен" style="width:50px; text-align: center; float:center;  white-space:nowrap;" priority="2">
+							<p:selectBooleanCheckbox value="#{userForManager.active}" disabled="true" />
+						</p:column>
+					</p:dataTable>
+					<h:panelGrid columns="2" cellpadding="5" style="margin: 0 auto;">
+						<p:commandButton id="buttonChoice" icon="fa fa-check fa-fw fa-fvm" value="Выбор" update=":form_edit_customer:table_managers" actionListener="#{customerController.doubleClickSelectedRowInTableUserForManager}" oncomplete="PF('dlg_user_choice').hide();" disabled="#{customerBackingBean.popupDialogSelectedUserForManager==null or !canEditSelectedCustomer}" />
+						<p:commandButton value="Отмена" onclick="PF('dlg_user_choice').hide();" />
+					</h:panelGrid>
+				</h:form>
+			</p:dialog>
+
+			<p:dialog style="width:50%; max-width: 95%; max-height: 95%; overflow: auto;" id="dialog_delete_manager" header="Удаление менеджера" widgetVar="dlg_delete_manager" resizable="false" modal="true" draggable="false" showEffect="fade" hideEffect="explode">
+				<h:form id="form_manager_delete">
+					<h:panelGrid columns="1" cellpadding="5" style="width: 100%;">
+						<h:outputLabel value="Вы действительно хотите удалить данного менеджера от текущеко клиента ?" />
+						<h:outputLabel style="font-weight: bold;" value="Менеджер: #{customerBackingBean.selectedUserForManagerInEditPage.firstName} #{customerBackingBean.selectedUserForManagerInEditPage.lastName} #{customerBackingBean.selectedUserForManagerInEditPage.patronymic}" />
+						<h:panelGrid columns="2" cellpadding="5" style="margin: 0 auto;">
+							<p:commandButton icon="fa fa-times-circle fa-fw fa-fvm" value="Удалить" update=":form_edit_customer:table_managers" actionListener="#{customerController.removeSelectedManagerFromUser}" oncomplete="PF('dlg_delete_manager').hide();" />
+							<p:commandButton value="Отмена" onclick="PF('dlg_delete_manager').hide();" />
+						</h:panelGrid>
+					</h:panelGrid>
+				</h:form>
+			</p:dialog>
+
+			<p:dialog style="width:50%; max-width: 95%; max-height: 95%; overflow: auto;" id="dialog_extract_contractor" header="Извлечение контрагента из списка" widgetVar="dlg_extract_contractor" resizable="false" modal="true" draggable="false">
+				<h:form id="form_extract_contractor">
+					<h:panelGrid columns="1" cellpadding="5" style="width: 100%;">
+						<h:outputLabel value="Извлечь ? :#{customerBackingBean.selectedContractorInEditPage.nameShort} (Идент: #{customerBackingBean.selectedContractorInEditPage.id})" />
+						<h:panelGrid columns="2" cellpadding="5" style="margin: 0 auto;">
+							<p:commandButton type="button" icon="fa extract fa-fw fa-fvm" value="Удалить">
+								<p:ajax event="click" listener="#{customerController.extractSelectedContractor}" update=":form_edit_customer:table_contractors_current :form_edit_customer:menubar_contractors_agent" oncomplete="PF('dlg_extract_contractor').hide();" />
+							</p:commandButton>
+							<p:commandButton type="button" value="Отмена" onclick="PF('dlg_extract_contractor').hide();" />
+						</h:panelGrid>
+					</h:panelGrid>
+				</h:form>
+			</p:dialog>
+
+			<p:dialog style="width:50%; max-width: 95%; max-height: 95%; overflow: auto;" id="dialog_delete_contractor" header="Удаление контрагента" widgetVar="dlg_delete_contractor" resizable="false" modal="true" draggable="false">
+				<h:form id="form_delete_contractor">
+					<h:panelGrid columns="1" cellpadding="5" style="width: 100%;">
+						<h:outputLabel value="Удалить ? :" />
+						<h:outputLabel value="#{customerBackingBean.selectedContractorInEditPage.nameShort} (Идент: #{customerBackingBean.selectedContractorInEditPage.id})" />
+						<h:panelGrid columns="2" cellpadding="5" style="margin: 0 auto;">
+							<p:commandButton type="button" icon="fa fa-times-circle fa-fw fa-fvm" value="Удалить">
+								<p:ajax event="click" listener="#{customerController.deleteSelectedContractor}" update=":form_edit_customer:table_contractors_current :form_edit_customer:menubar_contractors_agent" oncomplete="PF('dlg_delete_contractor').hide();" />
+							</p:commandButton>
+							<p:commandButton type="button" value="Отмена" onclick="PF('dlg_delete_contractor').hide();" />
+						</h:panelGrid>
+					</h:panelGrid>
+				</h:form>
+			</p:dialog>
+
+			<p:dialog responsive="true" style="width:40%; max-width: 95%; min-width: 40%; max-height: 95%; overflow: auto;" id="dialog_confirm_inn" header="Подтверждение ИНН" widgetVar="dlg_confirm_inn" resizable="false" modal="true" draggable="false">
+				<h:form id="form_confirm_inn">
+					<p:messages id="msgs" showDetail="true" />
+
+					<p:dataTable var="contractor" value="#{customerBackingBean.alreadyExistContractorsWithINN}" emptyMessage="Не найдено" rendered="#{customerBackingBean.alreadyExistContractorsWithINN.size() > 0}">
+						<p:column style="white-space:nowrap;" headerText="#{msgs['contractor.nameWork']}" priority="1">
+							<h:outputText value="#{contractor.nameWork}" />
+						</p:column>
+						<p:column style="white-space:nowrap;" headerText="#{msgs['contractor.nameShort']}" priority="2">
+							<h:outputText value="#{contractor.nameShort}" />
+						</p:column>
+						<p:column style="white-space:nowrap;" headerText="#{msgs['contractor.INN']}" priority="1">
+							<h:outputText value="#{contractor.inn}" />
+						</p:column>
+						<p:column style="white-space:nowrap;" headerText="#{msgs['contractor.OGRN']}" priority="2">
+							<h:outputText value="#{contractor.ogrn}" />
+						</p:column>
+					</p:dataTable>
+
+					<div class="ui-fluid" style="width: 100%;">
+						<div class="ui-grid ui-grid-responsive">
+							<div class="ui-grid-row">
+								<div class="ui-grid-col-1 resp_ui-grid-col-1">
+									<p:outputLabel value="ИНН нового контрагента" />
+								</div>
+								<div class="ui-grid-col-10">
+									<p:inputText id="field_newContractor_inn" value="#{customerBackingBean.innStringForNewContractor}" />
+								</div>
+							</div>
+							<div class="ui-grid-row">
+								<div class="ui-grid-col-1 resp_ui-grid-col-1">
+								</div>
+								<div class="ui-grid-col-10">
+									<h:outputLabel style="font-style: italic; font-size: small;" value="В дальнейшем его невозможно изменять!" />
+								</div>
+							</div>
+						</div>
+					</div>
+
+					<h:panelGrid columns="2" cellpadding="5" style="margin: 0 auto;">
+						<p:commandButton icon="fa fa-check fa-fw fa-fvm" value="Подтвердить" actionListener="#{customerController.buttonActionAddNewContractorByINN(enumBean.modelContractor)}" update="form_confirm_inn" />
+						<p:commandButton value="Отмена" onclick="PF('dlg_confirm_inn').hide();" />
+					</h:panelGrid>
+				</h:form>
+			</p:dialog>
+
+			<h:form id="form_edit_customer">
+				<div class="page_title">#{msgs['edit_customer.title']}</div>
+				<div class="ui-grid ui-grid-responsive">
+					<div class="ui-grid-row resp_grid_mar_tb_10">
+						<div class="ui-grid-col-1">
+							<p:outputLabel style="width:97%;" value="#{msgs['customer.title']}" />
+						</div>
+						<div class="ui-grid-col-2">
+							<p:outputLabel styleClass="field_readonly" value="#{customerBackingBean.selectedCustomer.title}&nbsp;" rendered="#{!canEditSelectedCustomer}" />
+							<p:inputText style="width:97%;" value="#{customerBackingBean.selectedCustomer.title}" rendered="#{canEditSelectedCustomer}" />
+						</div>
+					</div>
+
+					<div class="ui-grid-row resp_grid_mar_tb_10">
+						<div class="ui-grid-col-1">
+							<p:outputLabel value="#{msgs['customer.contacts']}" />
+						</div>
+						<div class="ui-grid-col-2">
+							<p:outputLabel style="width:97%;" styleClass="field_readonly" value="#{customerBackingBean.selectedCustomer.contacts}&nbsp;" rendered="#{!canEditSelectedCustomer}" />
+							<p:inputTextarea style="width:97%;" rows="2" value="#{customerBackingBean.selectedCustomer.contacts}" rendered="#{canEditSelectedCustomer}" />
+						</div>
+					</div>
+
+					<div class="ui-grid-row resp_grid_mar_tb_10">
+						<div class="ui-grid-col-1">
+							<p:outputLabel value="#{msgs['customer.description']}" />
+						</div>
+						<div class="ui-grid-col-2">
+							<p:outputLabel style="width:97%;" styleClass="field_readonly" value="#{customerBackingBean.selectedCustomer.description}&nbsp;" rendered="#{!canEditSelectedCustomer}" />
+							<p:inputTextarea rows="2" style="width:97%;" value="#{customerBackingBean.selectedCustomer.description}" rendered="#{canEditSelectedCustomer}" />
+						</div>
+					</div>
+				</div>
+
+				<div style="height: 15px;" />
+				<p:outputLabel value="Контрагенты клиента" />
+				<div style="height: 5px;" />
+
+				<p:menubar id="menubar_contractors_agent">
+					<p:menuitem value="Добавить" disabled="#{!loginController.hasAccessTo(enumBean.modelContractor, enumBean.accessAdd)}" icon="fa fa-plus-circle fa-fw fa-fvm" actionListener="#{customerController.buttonActionPrepareAddNewContractor}" update="dialog_confirm_inn" oncomplete="PF('dlg_confirm_inn').show();" />
+					<p:menuitem value="Удалить" icon="fa fa-times-circle fa-fw fa-fvm" onclick="PF('dlg_delete_contractor').show();" update="form_delete_contractor" disabled="#{customerBackingBean.selectedContractorInEditPage==null or !loginController.hasAccessTo(enumBean.modelContractor, enumBean.accessDelete)}" />
+					<p:menuitem value="Вставить" disabled="#{!canEditSelectedCustomer}" icon="fa fa-search-plus fa-fw fa-fvm" actionListener="#{customerController.buttonActionInsertContractor}" onsuccess="PF('dlg_contractor_choice').show();" update="form_contractor_choice" />
+					<p:menuitem value="Извлечь" icon="fa fa-eject fa-fw fa-fvm" onclick="PF('dlg_extract_contractor').show();" update="form_extract_contractor" disabled="#{customerBackingBean.selectedContractorInEditPage==null or !canEditSelectedCustomer}" />
+				</p:menubar>
+
+				<div style="height: 5px;" />
+				<p:dataTable id="table_contractors_current" var="contractor" value="#{customerBackingBean.selectedCustomer.contractorsList}" selectionMode="single" selection="#{customerBackingBean.selectedContractorInEditPage}" rowKey="#{contractor.inn}" rows="20" paginator="true" paginatorAlwaysVisible="false"
+							 paginatorTemplate="{CurrentPageReport} {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink}" currentPageReportTemplate="Контрагентов всего {totalRecords}. Страница {currentPage} из {totalPages}" emptyMessage="Не найдено">
+
+					<p:ajax event="rowSelect" update=":form_edit_customer:menubar_contractors_agent" />
+					<p:ajax event="rowUnselect" update=":form_edit_customer:menubar_contractors_agent" />
+					<p:ajax event="rowDblselect" listener="#{customerController.doubleClickSelectedRowInTableContractorsInEditCustomerPage}" />
+
+					<p:column headerText="#{msgs['contractor.contractorId']}" style="width:30px;" priority="2">
+						<h:outputText value="#{contractor.id}" />
+					</p:column>
+
+					<p:column style="width:20px; text-align: center;" priority="1">
+						<f:facet name="header">
+							<i class="fa fa-edit" />
+						</f:facet>
+						<p:commandButton icon="fa fa-edit" actionListener="#{customerController.redirectToEditContractorPage(contractor)}"/>
+					</p:column>
+
+					<p:column style="white-space:nowrap;" headerText="#{msgs['contractor.nameWork']}" priority="1">
+						<h:outputText value="#{contractor.nameWork}" />
+					</p:column>
+					<p:column style="white-space:nowrap;" headerText="#{msgs['contractor.nameShort']}" priority="2">
+						<h:outputText value="#{contractor.nameShort}" />
+					</p:column>
+					<p:column style="white-space:nowrap;" headerText="#{msgs['contractor.INN']}" priority="1">
+						<h:outputText value="#{contractor.inn}" />
+					</p:column>
+					<p:column style="white-space:nowrap;" headerText="#{msgs['contractor.OGRN']}" priority="2">
+						<h:outputText value="#{contractor.ogrn}" />
+					</p:column>
+				</p:dataTable>
+
+				<p:outputPanel>
+					<div style="height: 15px;" />
+					<p:outputLabel value="Менеджеры с правами доступа" />
+					<div style="height: 5px;" />
+					<p:menubar id="toolbar_managers" rendered="#{canEditSelectedCustomer}">
+						<p:menuitem value="Добавить" icon="fa fa-plus-circle fa-fw fa-fvm" actionListener="#{customerController.buttonActionInsertCustomerManager}" onsuccess="PF('dlg_user_choice').show();" update="form_user_choice"/>
+						<p:menuitem value="Удалить" icon="fa fa-times-circle fa-fw fa-fvm" onclick="PF('dlg_delete_manager').show();" update="form_manager_delete" disabled="#{customerBackingBean.selectedUserForManagerInEditPage==null}" />
+					</p:menubar>
+
+					<div style="height: 5px;" />
+
+					<p:dataTable id="table_managers" styleClass="ui-noborder" style="width:100%;" var="manager" value="#{customerBackingBean.selectedCustomer.getCustomerManagersList()}" selectionMode="single" selection="#{customerBackingBean.selectedUserForManagerInEditPage}" rowKey="#{manager.id}" widgetVar="cellUserOperRoles"
+								 emptyMessage="Нет записей">
+						<p:ajax event="rowSelect" update=":form_edit_customer:toolbar_managers" />
+						<p:ajax event="rowUnselect" update=":form_edit_customer:toolbar_managers" />
+
+						<p:column headerText="ФИО" style="white-space:nowrap;" priority="1">
+							<h:outputText value="#{manager.firstName} #{manager.lastName} #{manager.patronymic}" />
+						</p:column>
+
+						<p:column headerText="ФИО сокр." style="width:200px; white-space:nowrap;" priority="1">
+							<h:outputText value="#{manager.title}" />
+						</p:column>
+
+						<p:column headerText="Активен" style="width:50px; text-align: center; float:center; white-space:nowrap;" priority="2">
+							<p:selectBooleanCheckbox value="#{manager.active}" disabled="true" />
+						</p:column>
+
+						<p:column headerText="Тип" style="width:300px; white-space:nowrap;" priority="2">
+							<ui:repeat var="role" value="#{manager.getUserRoles()}" varStatus="status">
+								<h:outputText value="#{role.name}" />
+								<h:outputText rendered="#{!status.last}" value=", " />
+							</ui:repeat>
+						</p:column>
+					</p:dataTable>
+				</p:outputPanel>
+				<p:remoteCommand name="processFormEditCustomer" actionListener="#{customerController.buttonActionSaveCustomer}" />
+
+			</h:form>
+
+			<div class="page_title">Финансовы проводки</div>
+				<ui:include src="/customers_financial_items.xhtml" />
+
+			<p:separator />
+			<div class="ui-grid ui-grid-responsive">
+				<div class="ui-grid-row">
+					<div class="ui-grid-col-1">
+						<table width="100%" border="0" cellpadding="0" cellspacing="0">
+							<tr>
+								<td><p:commandButton id="com_saveEdit" value="Сохранить" type="button" onclick="processFormEditCustomer()" rendered="#{canEditSelectedCustomer}" />
+									<p:commandButton id="com_back" value="Назад" actionListener="#{customerController.buttonActionCancelSaveCustomer}" rendered="#{!canEditSelectedCustomer}" /></td>
+								<td align="right"><p:commandButton id="com_cancelSaveEdit" value="Отмена" actionListener="#{customerController.buttonActionCancelSaveCustomer}" rendered="#{canEditSelectedCustomer}" immediate="true"/></td>
+							</tr>
+						</table>
+					</div>
+				</div>
+			</div>
+
+		</ui:define>
+	</ui:composition>
+</h:body>
+</html>

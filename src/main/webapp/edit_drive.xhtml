@@ -1,0 +1,1401 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:h="http://java.sun.com/jsf/html" xmlns:f="http://java.sun.com/jsf/core" xmlns:ui="http://java.sun.com/jsf/facelets" xmlns:p="http://primefaces.org/ui">
+<h:body>
+    <ui:composition template="/layout/forcab.xhtml">
+        <ui:define name="windowTitle">#{msgs['product.title']}</ui:define>
+        <ui:define name="content">
+            <f:facet name="postinit">
+                <h:outputScript library="primefaces" name="gmap/gmap.js" />
+                <script type="text/javascript" src="http://maps.google.com/maps/api/js?sensor=true"></script>
+
+            </f:facet>
+            <style type="text/css">
+                .Active
+                {
+                    background-color: #FCDED2 !important;
+                    background-image: none !important;
+                    color: #000000 !important;
+                }
+            </style>
+
+            <style type="text/css">
+                .singleLine
+                {
+                    text-wrap:none;
+                    white-space:nowrap;
+                    overflow:hidden;
+                    text-overflow:ellipsis;
+                }
+            </style>
+
+            <style type="text/css">
+                .VehicleLogistian
+                {
+                    font-weight: bold;
+                }
+            </style>
+            <!--<style type="text/css">-->
+                <!--html, body, dialog {-->
+                    <!--height: 100%;-->
+                    <!--margin: 0;-->
+                <!--}-->
+            <!--.mapClass {-->
+                <!--width: 100%;-->
+                <!--height: 100%;-->
+            <!--}-->
+            <!--</style>-->
+
+            <p:dialog style="width:1100px; max-width: 1100px; max-height: 800px; overflow: auto;" id="dialog_contractor_of_company_choice" widgetVar="dlg_contractor_of_company_choice" resizable="false" modal="true" draggable="false" rendered="#{!canEditProducts}">
+                <h:form  id="form_choose_contractors_of_company">
+                    <div class="page_title">#{msgs['drive.companies']}</div>
+
+                    <div style="height: 5px;" />
+                    <p:dataTable id="table_contractor_of_company" var="contractor" value="#{driveController.getContractorsOfCompany()}" selectionMode="single" selection="#{driveBackingBean.selectedContractorOfCompany}" rowKey="#{contractor}" rows="15" rowsPerPageTemplate="10,25,50,100" paginator="true"
+                                 paginatorAlwaysVisible="true" filteredValue="#{driveBackingBean.filteredContractorsOfCompany}" paginatorTemplate="{CurrentPageReport} {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}" currentPageReportTemplate="Контрагентов всего {totalRecords}. Страница {currentPage} из {totalPages}"
+                                 emptyMessage="Не найдено" widgetVar="contractorOfCompanyWidgetVar">
+
+                        <p:ajax event="rowSelect" update=":form_choose_contractors_of_company:buttonChoiceContractorOfCompany" />
+                        <p:ajax event="rowUnselect" update=":form_choose_contractors_of_company:buttonChoiceContractorOfCompany" />
+                        <p:ajax event="rowDblselect" listener="#{driveController.doubleClickSelectedRowForChooseContractorOfCompany}" update=":form_drive_edit:contractor_of_company_choose_id"
+                                onsuccess="PF('dlg_contractor_of_company_choice').hide();"/>
+
+                        <f:facet name="header">
+                            <p:outputPanel>
+                                <h:outputText style="margin-right:5px;" value="Поиск:" />
+                                <p:inputText id="globalFilter" onkeyup="PF('contractorOfCompanyWidgetVar').filter()" style="width:150px" placeholder="Поиск по названию, ИНН, ОГРН"/>
+                            </p:outputPanel>
+                        </f:facet>
+
+                        <p:column style="width:20px; text-align: center;" priority="1">
+                            <f:facet name="header">
+                                <i class="fa fa-check" />
+                            </f:facet>
+                            <p:commandButton icon="fa fa-check" actionListener="#{driveController.setContractorOfCompany(contractor)}" update=":form_drive_edit:contractor_of_company_choose_id"
+                                             onsuccess="PF('dlg_contractor_of_company_choice').hide();"/>
+                        </p:column>
+
+                        <p:column headerText="#{msgs['customer']}" filterStyle="display:none"  filterBy="#{contractor.customer.title}" filterMatchMode="contains" style="white-space:nowrap;" priority="1">
+                            <h:outputText value="#{contractor.customer.title}" />
+                        </p:column>
+                        <p:column headerText="#{msgs['contractor.nameWork']}" filterStyle="display:none" filterBy="#{contractor.nameWork}" filterMatchMode="contains" style="white-space:nowrap;" priority="1">
+                            <h:outputText value="#{contractor.nameWork}" />
+                        </p:column>
+                        <p:column headerText="#{msgs['contractor.nameShort']}" filterStyle="display:none" filterBy="#{contractor.nameShort}" filterMatchMode="contains" style="white-space:nowrap;" priority="3">
+                            <h:outputText value="#{contractor.nameShort}" />
+                        </p:column>
+                        <p:column headerText="#{msgs['contractor.INN']}" filterStyle="display:none" filterBy="#{contractor.inn}" filterMatchMode="contains" style="white-space:nowrap;" priority="2">
+                            <h:outputText value="#{contractor.inn}" />
+                        </p:column>
+                        <p:column headerText="#{msgs['contractor.OGRN']}" filterStyle="display:none"  filterBy="#{contractor.ogrn}" filterMatchMode="contains" style="white-space:nowrap;" priority="3">
+                            <h:outputText value="#{contractor.ogrn}" />
+                        </p:column>
+                    </p:dataTable>
+                    <h:panelGrid columns="2" cellpadding="5" style="margin: 0 auto;">
+                        <p:commandButton id="buttonChoiceContractorOfCompany" icon="fa fa-check fa-fw fa-fvm" value="Выбор"
+                                         update=":form_drive_edit:contractor_of_company_choose_id"  oncomplete="PF('dlg_contractor_of_company_choice').hide();" actionListener="#{driveController.doubleClickSelectedRowForChooseContractorOfCompany}" disabled="#{driveBackingBean.selectedContractorOfCompany==null}" />
+                        <p:commandButton value="Отмена" onclick="PF('dlg_contractor_of_company_choice').hide();" />
+                    </h:panelGrid>
+                </h:form>
+            </p:dialog>
+
+            <p:dialog style="width:1100px; max-width: 1100px; max-height: 800px; overflow: auto;" id="dialog_contractor_of_carrier_choice" widgetVar="dlg_contractor_of_carrier_choice" resizable="false" modal="true" draggable="false" rendered="#{!canEditProducts}">
+                <h:form  id="form_choose_contractor_of_carrier">
+                    <div class="page_title">#{msgs['drive.carriers']}</div>
+
+                    <div style="height: 5px;" />
+                    <p:dataTable id="table_carrier_of_company" var="contractor" value="#{driveController.getContractorsOfCarrier()}" selectionMode="single" selection="#{driveBackingBean.selectedContractorOfCarriers}" rowKey="#{contractor}" rows="15" rowsPerPageTemplate="10,25,50,100" paginator="true"
+                                 paginatorAlwaysVisible="true" filteredValue="#{driveBackingBean.filteredContractorsCarriers}" paginatorTemplate="{CurrentPageReport} {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}" currentPageReportTemplate="Контрагентов всего {totalRecords}. Страница {currentPage} из {totalPages}"
+                                 emptyMessage="Не найдено" widgetVar="contractorOfCarrierWidgetVar">
+
+                        <p:ajax event="rowSelect" update=":form_choose_contractor_of_carrier:buttonChoiceContractorOfCarrier" />
+                        <p:ajax event="rowUnselect" update=":form_choose_contractor_of_carrier:buttonChoiceContractorOfCarrier" />
+                        <p:ajax event="rowDblselect" listener="#{driveController.doubleClickSelectedRowForChooseContractorOfCarrier}" update=":form_drive_edit:contractor_of_carrier_choose_id"
+                                onsuccess="PF('dlg_contractor_of_carrier_choice').hide();"/>
+
+                        <f:facet name="header">
+                            <p:outputPanel>
+                                <h:outputText style="margin-right:5px;" value="Поиск:" />
+                                <p:inputText id="globalFilter" onkeyup="PF('contractorOfCarrierWidgetVar').filter()" style="width:150px" placeholder="Поиск по названию, ИНН, ОГРН"/>
+                            </p:outputPanel>
+                        </f:facet>
+
+                        <p:column style="width:20px; text-align: center;" priority="1">
+                            <f:facet name="header">
+                                <i class="fa fa-check" />
+                            </f:facet>
+                            <p:commandButton icon="fa fa-check" actionListener="#{driveController.setContractorOfCarrier(contractor)}" update=":form_drive_edit:contractor_of_carrier_choose_id"
+                                             onsuccess="PF('dlg_contractor_of_company_choice').hide();"/>
+                        </p:column>
+
+                        <p:column headerText="#{msgs['customer']}" filterStyle="display:none"  filterBy="#{contractor.customer.title}" filterMatchMode="contains" style="white-space:nowrap;" priority="1">
+                            <h:outputText value="#{contractor.customer.title}" />
+                        </p:column>
+                        <p:column headerText="#{msgs['contractor.nameWork']}" filterStyle="display:none" filterBy="#{contractor.nameWork}" filterMatchMode="contains" style="white-space:nowrap;" priority="1">
+                            <h:outputText value="#{contractor.nameWork}" />
+                        </p:column>
+                        <p:column headerText="#{msgs['contractor.nameShort']}" filterStyle="display:none" filterBy="#{contractor.nameShort}" filterMatchMode="contains" style="white-space:nowrap;" priority="3">
+                            <h:outputText value="#{contractor.nameShort}" />
+                        </p:column>
+                        <p:column headerText="#{msgs['contractor.INN']}" filterStyle="display:none" filterBy="#{contractor.inn}" filterMatchMode="contains" style="white-space:nowrap;" priority="2">
+                            <h:outputText value="#{contractor.inn}" />
+                        </p:column>
+                        <p:column headerText="#{msgs['contractor.OGRN']}" filterStyle="display:none"  filterBy="#{contractor.ogrn}" filterMatchMode="contains" style="white-space:nowrap;" priority="3">
+                            <h:outputText value="#{contractor.ogrn}" />
+                        </p:column>
+                    </p:dataTable>
+                    <h:panelGrid columns="2" cellpadding="5" style="margin: 0 auto;">
+                        <p:commandButton id="buttonChoiceContractorOfCarrier" icon="fa fa-check fa-fw fa-fvm" value="Выбор"
+                                         update=":form_drive_edit:contractor_of_carrier_choose_id"  oncomplete="PF('dlg_contractor_of_carrier_choice').hide();" actionListener="#{driveController.doubleClickSelectedRowForChooseContractorOfCarrier}" disabled="#{driveBackingBean.selectedContractorOfCarriers==null}" />
+                        <p:commandButton value="Отмена" onclick="PF('dlg_contractor_of_carrier_choice').hide();" />
+                    </h:panelGrid>
+                </h:form>
+            </p:dialog>
+
+            <p:dialog style="width:1100px; max-width: 1100px; max-height: 800px; overflow: auto;" id="dialog_contractor_of_customer_choice" widgetVar="dlg_contractor_of_customer_choice" resizable="false" modal="true" draggable="false" rendered="#{!canEditProducts}">
+                <h:form  id="form_choose_contractor_of_customer">
+                    <div class="page_title">#{msgs['drive.receivers']}</div>
+
+                    <div style="height: 5px;" />
+                    <p:dataTable id="table_carrier_of_customer" var="contractor" value="#{driveController.getContractorsOfCustomer()}" selectionMode="single" selection="#{driveBackingBean.selectedContractorOfReceiver}" rowKey="#{contractor}" rows="15" rowsPerPageTemplate="10,25,50,100" paginator="true"
+                                 paginatorAlwaysVisible="true" filteredValue="#{driveBackingBean.filteredContractorsReceiver}" paginatorTemplate="{CurrentPageReport} {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}" currentPageReportTemplate="Контрагентов всего {totalRecords}. Страница {currentPage} из {totalPages}"
+                                 emptyMessage="Не найдено" widgetVar="contractorOfCustomerWidgetVar">
+
+                        <p:ajax event="rowSelect" update=":form_choose_contractor_of_customer:buttonChoiceContractorOfCustomer" />
+                        <p:ajax event="rowUnselect" update=":form_choose_contractor_of_customer:buttonChoiceContractorOfCustomer" />
+                        <p:ajax event="rowDblselect" listener="#{driveController.doubleClickSelectedRowForChooseContractorOfCustomer}" update=":form_drive_edit:contractor_of_customer_choose_id"
+                                onsuccess="PF('dlg_contractor_of_customer_choice').hide();"/>
+
+                        <f:facet name="header">
+                            <p:outputPanel>
+                                <h:outputText style="margin-right:5px;" value="Поиск:" />
+                                <p:inputText id="globalFilter" onkeyup="PF('contractorOfCustomerWidgetVar').filter()" style="width:150px" placeholder="Поиск по названию, ИНН, ОГРН"/>
+                            </p:outputPanel>
+                        </f:facet>
+
+                        <p:column style="width:20px; text-align: center;" priority="1">
+                            <f:facet name="header">
+                                <i class="fa fa-check" />
+                            </f:facet>
+                            <p:commandButton icon="fa fa-check" actionListener="#{driveController.setContractorOfCustomer(contractor)}" update=":form_drive_edit:contractor_of_customer_choose_id"
+                                             onsuccess="PF('dlg_contractor_of_customer_choice').hide();"/>
+                        </p:column>
+
+                        <p:column headerText="#{msgs['customer']}" filterStyle="display:none"  filterBy="#{contractor.customer.title}" filterMatchMode="contains" style="white-space:nowrap;" priority="1">
+                            <h:outputText value="#{contractor.customer.title}" />
+                        </p:column>
+                        <p:column headerText="#{msgs['contractor.nameWork']}" filterStyle="display:none" filterBy="#{contractor.nameWork}" filterMatchMode="contains" style="white-space:nowrap;" priority="1">
+                            <h:outputText value="#{contractor.nameWork}" />
+                        </p:column>
+                        <p:column headerText="#{msgs['contractor.nameShort']}" filterStyle="display:none" filterBy="#{contractor.nameShort}" filterMatchMode="contains" style="white-space:nowrap;" priority="3">
+                            <h:outputText value="#{contractor.nameShort}" />
+                        </p:column>
+                        <p:column headerText="#{msgs['contractor.INN']}" filterStyle="display:none" filterBy="#{contractor.inn}" filterMatchMode="contains" style="white-space:nowrap;" priority="2">
+                            <h:outputText value="#{contractor.inn}" />
+                        </p:column>
+                        <p:column headerText="#{msgs['contractor.OGRN']}" filterStyle="display:none"  filterBy="#{contractor.ogrn}" filterMatchMode="contains" style="white-space:nowrap;" priority="3">
+                            <h:outputText value="#{contractor.ogrn}" />
+                        </p:column>
+                    </p:dataTable>
+                    <h:panelGrid columns="2" cellpadding="5" style="margin: 0 auto;">
+                        <p:commandButton id="buttonChoiceContractorOfCustomer" icon="fa fa-check fa-fw fa-fvm" value="Выбор"
+                                         update=":form_drive_edit:contractor_of_customer_choose_id"  oncomplete="PF('dlg_contractor_of_customer_choice').hide();" actionListener="#{driveController.doubleClickSelectedRowForChooseContractorOfCustomer}" disabled="#{driveBackingBean.selectedContractorOfReceiver==null}" />
+                        <p:commandButton value="Отмена" onclick="PF('dlg_contractor_of_customer_choice').hide();" />
+                    </h:panelGrid>
+                </h:form>
+            </p:dialog>
+
+            <p:dialog  style="width:1100px; max-width: 1100px; max-height: 800px; overflow: auto;" id="dialog_car_choice" widgetVar="dlg_car_choice" resizable="false" modal="true" draggable="false" rendered="#{!canEditProducts}">
+                <h:form id="form_edit_vehicles">
+                    <div class="page_title">#{msgs['drive.carChoice']}</div>
+                    <div style="height: 5px;" />
+
+                    <p:dataTable id="table_vehicles" widgetVar="tableVehicles" style="width:100%;" var="vehicle" value="#{vehicleController.vehicles}" selectionMode="single" selection="#{vehicleBackingBean.selectedVehicle}" rowKey="#{vehicle.id}" sortBy="#{vehicle.truck.title}" filteredValue="#{vehicleBackingBean.filtredVehicleList}"
+                                 rows="15" rowsPerPageTemplate="10,25,50,100" paginator="true" paginatorAlwaysVisible="true" paginatorTemplate="{CurrentPageReport} {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}" currentPageReportTemplate="Машин всего {totalRecords}. Страница {currentPage} из {totalPages}" emptyMessage="Нет записей">
+
+                        <p:ajax event="rowSelect" update=":form_edit_vehicles:toolbar_vehicles" />
+                        <p:ajax event="rowUnselect" update=":form_edit_vehicles:toolbar_vehicles" />
+                        <p:ajax event="rowDblselect" listener="#{driveController.doubleClickSelectedRowForChooseCar}" update=":form_drive_edit:vehicle_choose_id :form_drive_edit:updateIdLogistianAccordingToCar"
+                                onsuccess="PF('dlg_car_choice').hide();"/>
+
+                        <f:facet name="header">
+                            <p:outputPanel style="text-align: right">
+                                <h:outputText value="Поиск по машинам: "/>
+                                <p:inputText id="globalFilter" onkeyup="PF('tableVehicles').filter()" style="width:150px;horiz-align: right"/>
+                            </p:outputPanel>
+                        </f:facet>
+
+                        <p:column style="width:20px; text-align: center;" priority="1">
+                            <f:facet name="header">
+                                <i class="fa fa-check" />
+                            </f:facet>
+                            <p:commandButton icon="fa fa-check" actionListener="#{driveController.setVehicle(vehicle)}" update=":form_drive_edit:vehicle_choose_id :form_drive_edit:updateIdLogistianAccordingToCar"
+                                             onsuccess="PF('dlg_car_choice').hide();"/>
+                        </p:column>
+
+                        <p:column headerText="#{msgs['vehicles.title']}" style="white-space:nowrap;" priority="2" filterBy="#{vehicle.truck.title}" filterMatchMode="contains" filterStyle="display:none">
+                            <h:outputText value="#{vehicle.truck.title}" />
+                        </p:column>
+
+                        <p:column headerText="#{msgs['vehicles.govNumber']}" style="white-space:nowrap;" priority="1" filterBy="#{vehicle.truck.govNumber}" filterMatchMode="contains" filterStyle="display:none">
+                            <h:outputText value="#{vehicle.truck.govNumber}" />
+                        </p:column>
+
+                        <p:column headerText="#{msgs['vehicles.trailerGovNumber']}" style="white-space:nowrap;" priority="1" filterBy="#{vehicle.trailer.govNumber}" filterMatchMode="contains" filterStyle="display:none">
+                            <h:outputText value="#{vehicle.trailer.govNumber}" />
+                        </p:column>
+
+                        <p:column headerText="#{msgs['vehicles.carrier']}" style="white-space:nowrap;" priority="1" filterBy="#{vehicle.carrier.nameShort}" filterMatchMode="contains" filterStyle="display:none">
+                            <h:outputText value="#{vehicle.carrier.nameShort}" style="white-space:nowrap;" />
+                        </p:column>
+
+                        <p:column headerText="#{msgs['vehicles.logistician']}" style="white-space:nowrap;" priority="1" filterBy="#{vehicle.logistician.title}" filterMatchMode="contains" filterStyle="display:none">
+                            <h:outputText value="#{vehicle.logistician.title}" />
+                        </p:column>
+
+                        <p:column headerText="#{msgs['vehicles.trailerBottomLoading']}" style="white-space:nowrap;" priority="2">
+                            <p:outputPanel style="text-align: center;" rendered="#{vehicle.trailer.bottomLoading}">
+                                <i class="fa fa-check-square-o" />
+                            </p:outputPanel>
+                        </p:column>
+
+                        <p:column headerText="#{msgs['vehicles.trailerCalibration']}" style="white-space:nowrap;" priority="2">
+                            <h:outputText value="#{vehicle.trailer.calibration}">
+                                <f:convertNumber groupingUsed="true" minFractionDigits="0" />
+                            </h:outputText>
+                        </p:column>
+
+                        <p:column headerText="#{msgs['vehicles.trailerBottomLoadingCalibration']}" style="white-space:nowrap;" priority="2">
+                            <h:outputText value="#{vehicle.trailer.bottomLoadingCalibration}">
+                                <f:convertNumber groupingUsed="true" minFractionDigits="0" />
+                            </h:outputText>
+                        </p:column>
+
+                        <p:column headerText="#{msgs['vehicles.trailerCapacity']}"  style="white-space:nowrap;" priority="2">
+                            <h:outputText value="#{vehicle.trailer.capacity}">
+                                <f:convertNumber groupingUsed="true" minFractionDigits="0" />
+                            </h:outputText>
+                        </p:column>
+
+                        <p:column headerText="#{msgs['vehicles.brand']}" style="white-space:nowrap;" priority="2" >
+                            <h:outputText value="#{vehicle.truck.brand}"/>
+                        </p:column>
+                    </p:dataTable>
+
+                    <h:panelGrid columns="2" cellpadding="5" style="margin: 0 auto;">
+                        <p:commandButton id="toolbar_vehicles" icon="fa fa-check fa-fw fa-fvm" value="Выбор"
+                                         update=":form_drive_edit:vehicle_choose_id :form_drive_edit:updateIdLogistianAccordingToCar"  oncomplete="PF('dlg_car_choice').hide();" actionListener="#{driveController.doubleClickSelectedRowForChooseCar}" disabled="#{vehicleBackingBean.selectedVehicle==null}" />
+                        <p:commandButton value="Отмена" onclick="PF('dlg_car_choice').hide();" />
+                    </h:panelGrid>
+                </h:form>
+            </p:dialog>
+
+            <p:dialog style="width:1100px; max-width: 1100px; max-height: 800px; overflow: auto;" id="dialog_driver_choice" header="Выбор водителя" widgetVar="dlg_driver_choice" resizable="false" modal="true" draggable="false">
+                <h:form id="form_driver_choice">
+                    <div style="height: 5px;" />
+                    <p:dataTable id="table_drivers" var="driverForVehicle" widgetVar="tableDrivers"  value="#{driveController.getAllDriversForVehicle()}" selectionMode="single"
+                                 selection="#{driveBackingBean.selectedDriverForVehicle}" rowStyleClass="#{(driverService.checkVehicleGovernmentNumber(driverForVehicle.getStringOfVehicleGovNumbers(),driveBackingBean.selectedDrive.vehicle.truck.govNumber)) eq true ? 'Active' : null}" rowKey="#{driverForVehicle}" filteredValue="#{driveBackingBean.filteredDriversList}"
+                                 rows="15" paginator="true" paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink}" currentPageReportTemplate="Страница {currentPage} из {totalPages}" emptyMessage="Не найдено">
+
+                        <p:ajax event="rowSelect" update=":form_driver_choice:buttonChoice" />
+                        <p:ajax event="rowUnselect" update=":form_driver_choice:buttonChoice" />
+                        <p:ajax event="rowDblselect" listener="#{driveController.doubleClickSelectedRowForChooseDriver}" update=":form_drive_edit:driver_choose_id" onsuccess="PF('dlg_driver_choice').hide();" />
+
+                        <f:facet name="header">
+                            <p:outputPanel style="text-align: right">
+                                <h:outputText value="Поиск по водителям:" />
+                                <p:inputText id="globalFilter" onkeyup="PF('tableDrivers').filter()" style="width:150px;horiz-align: right"/>
+                            </p:outputPanel>
+                        </f:facet>
+
+                        <p:column style="width:20px; text-align: center;" priority="1">
+                            <f:facet name="header">
+                                <i class="fa fa-check" />
+                            </f:facet>
+                            <p:commandButton icon="fa fa-check" actionListener="#{driveController.setDriver(driverForVehicle)}" update=":form_drive_edit:driver_choose_id"
+                                             onsuccess="PF('dlg_driver_choice').hide();"/>
+                        </p:column>
+
+                        <p:column headerText="ФИО сокр." style="width:200px; white-space:nowrap;" priority="1" filterBy="#{driverForVehicle.title}" filterMatchMode="contains" filterStyle="display:none">
+                            <h:outputText value="#{driverForVehicle.title}" />
+                        </p:column>
+
+                        <p:column headerText="Машины" style="width:300px; white-space:nowrap;" priority="1" filterBy="#{driverForVehicle.stringOfVehicleGovNumbers}" filterMatchMode="contains" filterStyle="display:none">
+                            <h:outputText value="#{driverForVehicle.stringOfVehicleGovNumbers}" />
+                        </p:column>
+
+                        <p:column headerText="Примечание" style="width:200px; white-space:nowrap;" priority="3" filterBy="#{driverForVehicle.description}" filterMatchMode="contains" filterStyle="display:none">
+                            <h:outputText value="#{driverForVehicle.description}" />
+                        </p:column>
+                    </p:dataTable>
+                    <h:panelGrid columns="2" cellpadding="5" style="margin: 0 auto;">
+                        <p:commandButton id="buttonChoice" icon="fa fa-check fa-fw fa-fvm" value="Выбор" actionListener="#{driveController.doubleClickSelectedRowForChooseDriver}" update=":form_drive_edit:driver_choose_id" oncomplete="PF('dlg_driver_choice').hide();" disabled="#{driveBackingBean.selectedDriverForVehicle==null}" />
+                        <p:commandButton value="Отмена" onclick="PF('dlg_driver_choice').hide();" />
+                    </h:panelGrid>
+                </h:form>
+            </p:dialog>
+
+            <p:dialog style="width:1100px; max-width: 1100px; max-height: 800px; overflow: auto;" id="dialog_order_choice" widgetVar="dlg_order_choice" resizable="false" modal="true" draggable="false" rendered="#{!canEditProducts}">
+                <h:form  id="form_choose_order">
+                    <div class="page_title">#{msgs['drive.order']}</div>
+
+                    <div style="height: 5px;" />
+                    <p:dataTable rowIndexVar="rowIndex"
+                                 style="font-size:11px !important; width: 100%;" scrollWidth="1200" id="table_orders" scrollable="true" var="order" value="#{orderController.getOrders()}" selectionMode="single" selection="#{orderBackingBean.selectedOrder}" rowKey="#{order.id}" paginator="true" paginatorAlwaysVisible="true"
+                                 paginatorTemplate="{CurrentPageReport} {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}" currentPageReportTemplate="Страница {currentPage} из {totalPages}" emptyMessage="Нет записей"
+                                 rows="15" rowsPerPageTemplate="10,20,50,100">
+
+                        <p:ajax event="rowSelect" update=":form_choose_order:buttonChoiceOrder" />
+                        <p:ajax event="rowUnselect" update=":form_choose_order:buttonChoiceOrder" />
+                        <p:ajax event="rowDblselect" listener="#{driveController.doubleClickSelectedRowForOrder}" update=":form_drive_edit:form_driveOrder:table_driveOrders"/>
+
+                                <p:column style="width:20px; text-align: center;" priority="1">
+                                    <f:facet name="header">
+                                        <i class="fa fa-check" />
+                                    </f:facet>
+                                    <p:commandButton icon="fa fa-check" actionListener="#{driveController.setOrder(order)}" update=":form_drive_edit:form_driveOrder:table_driveOrders"
+                                                     onsuccess="PF('dlg_order_choice').hide();"/>
+                                </p:column>
+                                <p:column headerText="#{msgs['order.number']}" styleClass="header-text-order" style="width:30px;" />
+
+                                <p:column headerText="#{msgs['order.createdDate']}" styleClass="header-text-order" style="width:60px;" />
+
+                                <p:column headerText="#{msgs['order.ownerUser']}" styleClass="header-text-order" style="width:60px;" />
+
+                                <p:column headerText="#{msgs['order.loadDescription']}" styleClass="header-text-order" style="width:60px;" />
+
+
+                    </p:dataTable>
+                    <h:panelGrid columns="2" cellpadding="5" style="margin: 0 auto;">
+                        <p:commandButton id="buttonChoiceOrder" icon="fa fa-check fa-fw fa-fvm" value="Выбор"
+                                         update=":form_drive_edit:form_driveOrder:table_driveOrders"  oncomplete="PF('dlg_order_choice').hide();" actionListener="#{driveController.doubleClickSelectedRowForOrder}" disabled="#{orderBackingBean.selectedOrder==null}" />
+                        <p:commandButton value="Отмена" onclick="PF('dlg_order_choice').hide();" />
+                    </h:panelGrid>
+                </h:form>
+            </p:dialog>
+
+            <p:dialog id="dialog_delete_driveState" header="Удаление состояние" widgetVar="dlg_delete_driveState" resizable="false" modal="true" draggable="false" showEffect="fade" hideEffect="explode">
+                <h:form id="form_delete_driveState">
+                    <h:panelGrid columns="1" cellpadding="5" style="width: 100%;">
+                        <h:outputLabel value="Вы действительно хотите удалить данное состояние?" />
+                        <h:outputLabel style="font-weight: bold;" value="Вид товара: #{driveBackingBean.selectedDriveState.modifiedDate} идент.: #{driveBackingBean.selectedDriveState.driveStateType.name}" />
+                        <h:panelGrid columns="2" cellpadding="5" style="margin: 0 auto;">
+                            <p:commandButton icon="fa fa-times-circle fa-fw fa-fvm" value="Удалить" update=":form_drive_edit:form_driveState:table_driveStates :form_drive_edit:currentDriveStateDate" actionListener="#{driveController.buttonActionRemoveDriveState}"  oncomplete="PF('dlg_delete_driveState').hide();" />
+                            <p:commandButton value="Отмена" onclick="PF('dlg_delete_driveState').hide();" />
+                        </h:panelGrid>
+                    </h:panelGrid>
+                </h:form>
+            </p:dialog>
+
+            <p:dialog id="dialog_addNewDrivePointForSource" header="Редактирование объекта" widgetVar="dlg_addNewDrivePointForSource" resizable="false" modal="true" draggable="false" rendered="#{!canEditProducts}">
+                <h:form id="form_addNewDrivePointForSource">
+                    <h:panelGrid columns="1" cellpadding="6" style="width: 100%;">
+                        <h:panelGrid columns="2" cellpadding="6">
+
+                                    <h:outputLabel  value="#{msgs['drivePoint.fromWhere']}"/>
+
+                                    <p:selectOneMenu id="changeFromContractorToContractor"  value="#{driveBackingBean.selectedDrivePoint.typeOfObject}" style="width: 150px;">
+                                    <f:selectItem itemLabel="#{msgs['drivePoint.base.shipmentBase']}" itemValue="1" />
+                                    <f:selectItem itemLabel="#{msgs['drivePoint.base.customer']}" itemValue="2" />
+                                    <f:selectItem itemLabel="#{msgs['drivePoint.base.other']}" itemValue="3" />
+                                        <p:ajax update="form_addNewDrivePointForSource"/>
+                                    </p:selectOneMenu>
+
+                                    <h:outputLabel  value="#{msgs['drivePoint.object']}"/>
+
+                                    <p:selectOneMenu rendered="#{driveBackingBean.selectedDrivePoint.typeOfObject == 1}"
+                                                     id="shipmentBaseId" value="#{driveBackingBean.shipmentBasisForLinkedObject}"
+                                                     valueChangeListener="#{driveController.changeInputValuesToShipmentBaseData}"
+                                        converter="shipmentBaseConverter">
+                                        <!--<f:selectItem itemLabel="[Не выбран]" itemValue="#{null}" />-->
+                                        <f:selectItems value="#{driveBackingBean.shipmentBases}" var="shipmentBase" itemValue="#{shipmentBase}" itemLabel="#{shipmentBase.nameShort}" />
+                                        <p:ajax update="form_addNewDrivePointForSource"/>
+                                    </p:selectOneMenu>
+                                    <p:inputText  id="stringId" value="#{driveBackingBean.selectedDrivePoint.linkToObject}" rendered="#{driveBackingBean.selectedDrivePoint.typeOfObject == 2 or driveBackingBean.selectedDrivePoint.typeOfObject == 3}"/>
+
+
+
+                                    <h:outputLabel  value="#{msgs['drivePoint.address']}"/>
+                                      <p:inputText value="#{driveBackingBean.selectedDrivePoint.address}"/>
+
+
+
+                                    <h:outputLabel  value="#{msgs['drivePoint.contactInfo']}"/>
+
+                                    <p:inputText value="#{driveBackingBean.selectedDrivePoint.contact}"/>
+
+                            <h:outputLabel  value="#{msgs['drivePoint.coordination']}"/>
+
+                            <h:panelGrid columns="1" cellpadding="6">
+                                    <p:commandButton id="btnPutCoordinates" style="width:30px;" type="button" onclick="PF('dlg_show_driveFromPutCoordinates').show();" icon="fa fa-map-marker" update="id_driveFromPutCoordinates" />
+
+                                    <p:outputLabel value="#{driveBackingBean.selectedDrivePoint.coordinates}" rendered="#{driveBackingBean.selectedDrivePoint.coordinates!=null}"/>
+                            </h:panelGrid>
+                                    <h:outputLabel  value="#{msgs['drivePoint.description']}"/>
+                                    <p:inputText value="#{driveBackingBean.selectedDrivePoint.description}"/>
+                        </h:panelGrid>
+
+                    <h:panelGrid columns="2" cellpadding="5" style="margin: 0 auto;">
+                        <p:commandButton icon="fa fa-check fa-fw fa-fvm" value="Сохранить"
+                                         update=":form_drive_edit:form_drivePoint:table_drivePoints"  oncomplete="PF('dlg_addNewDrivePointForSource').hide();" actionListener="#{driveController.addNewDrivePoint}" />
+                        <p:commandButton value="Отмена" onclick="PF('dlg_addNewDrivePointForSource').hide();" />
+                    </h:panelGrid>
+                    </h:panelGrid>
+                </h:form>
+            </p:dialog>
+
+            <p:dialog id="dialog_delete_drivePoint" header="Удаление объекта" widgetVar="dlg_delete_drivePoint" resizable="false" modal="true" draggable="false" showEffect="fade" hideEffect="explode">
+                <h:form id="form_delete_drivePoint">
+                    <h:panelGrid columns="1" cellpadding="5" style="width: 100%;">
+                        <h:outputLabel value="Вы действительно хотите удалить данного объекта?" />
+                        <h:outputLabel style="font-weight: bold;" value="Название объекта: #{driveBackingBean.selectedDrivePoint.linkToObject}"/>
+                        <h:panelGrid columns="2" cellpadding="5" style="margin: 0 auto;">
+                            <p:commandButton icon="fa fa-times-circle fa-fw fa-fvm" value="Удалить" update=":form_drive_edit:form_drivePoint:table_drivePoints" actionListener="#{driveController.buttonActionRemoveDrivePoint}"  oncomplete="PF('dlg_delete_drivePoint').hide();" />
+                            <p:commandButton value="Отмена" onclick="PF('dlg_delete_drivePoint').hide();" />
+                        </h:panelGrid>
+                    </h:panelGrid>
+                </h:form>
+            </p:dialog>
+
+            <p:dialog id="dialog_addNewDrivePointForDestination" header="Редактирование объекта" widgetVar="dlg_addNewDrivePointForDestination" resizable="false" modal="true" draggable="false" rendered="#{!canEditProducts}">
+                <h:form id="form_addNewDrivePointForDestination">
+                    <h:panelGrid columns="1" cellpadding="6" style="width: 100%;">
+                        <h:panelGrid columns="2" cellpadding="6">
+                                    <h:outputLabel  value="#{msgs['drivePoint.fromWhere']}"/>
+
+                                    <p:selectOneMenu  style="width:150px;" value="#{driveBackingBean.selectedDrivePointDestination.typeOfObject}">
+                                        <f:selectItem itemLabel="#{msgs['drivePoint.base.shipmentBase']}" itemValue="1" />
+                                        <f:selectItem itemLabel="#{msgs['drivePoint.base.customer']}" itemValue="2" />
+                                        <f:selectItem itemLabel="#{msgs['drivePoint.base.other']}" itemValue="3" />
+                                        <p:ajax update="form_addNewDrivePointForDestination"/>
+                                    </p:selectOneMenu>
+
+
+                                    <h:outputLabel  value="#{msgs['drivePoint.object']}"/>
+
+                                    <p:selectOneMenu rendered="#{driveBackingBean.selectedDrivePointDestination.typeOfObject == 1}"
+                                                     value="#{driveBackingBean.shipmentBasisForLinkedObject}"
+                                                     valueChangeListener="#{driveController.changeInputValuesToShipmentBaseDataForDestination}"
+                                                     converter="shipmentBaseConverter">
+                                        <f:selectItem itemLabel="[Не выбран]" itemValue="#{null}" />
+                                        <f:selectItems value="#{driveBackingBean.shipmentBases}" var="shipmentBase" itemValue="#{shipmentBase}" itemLabel="#{shipmentBase.nameShort}" />
+                                        <p:ajax update="form_addNewDrivePointForDestination"/>
+                                    </p:selectOneMenu>
+                                    <p:inputText value="#{driveBackingBean.selectedDrivePointDestination.linkToObject}" rendered="#{driveBackingBean.selectedDrivePointDestination.typeOfObject == 2 or driveBackingBean.selectedDrivePointDestination.typeOfObject == 3}"/>
+
+
+                                    <h:outputLabel  value="#{msgs['drivePoint.address']}"/>
+
+                                    <p:inputText value="#{driveBackingBean.selectedDrivePointDestination.address}"/>
+
+
+
+                                    <h:outputLabel  value="#{msgs['drivePoint.contactInfo']}"/>
+
+                                    <p:inputText value="#{driveBackingBean.selectedDrivePointDestination.contact}"/>
+
+                                    <h:outputLabel  value="#{msgs['drivePoint.coordination']}"/>
+
+                                    <h:panelGrid columns="1" cellpadding="6">
+                                    <p:commandButton id="btnToPutCoordinates" style="width:30px;" type="button" onclick="PF('dlg_show_driveToPutCoordinates').show();" icon="fa fa-map-marker" />
+
+                                    <p:outputLabel value="#{driveBackingBean.selectedDrivePointDestination.coordinates}" rendered="#{driveBackingBean.selectedDrivePointDestination.coordinates!=null}"/>
+                                    </h:panelGrid>
+                                    <h:outputLabel  value="#{msgs['drivePoint.description']}"/>
+
+                                    <p:inputText value="#{driveBackingBean.selectedDrivePointDestination.description}"/>
+                        </h:panelGrid>
+                    <h:panelGrid columns="2" cellpadding="5" style="margin: 0 auto;">
+                        <p:commandButton icon="fa fa-check fa-fw fa-fvm" value="Сохранить"
+                                         update=":form_drive_edit:form_drivePointDestination:table_drivePointsDestination"  oncomplete="PF('dlg_addNewDrivePointForDestination').hide();" actionListener="#{driveController.addNewDrivePointDestination}" />
+                        <p:commandButton value="Отмена" onclick="PF('dlg_addNewDrivePointForDestination').hide();" />
+                    </h:panelGrid>
+                    </h:panelGrid>
+                </h:form>
+            </p:dialog>
+
+            <p:dialog id="dialog_delete_drivePointDestination" header="Удаление объекта" widgetVar="dlg_delete_drivePointDestination" resizable="false" modal="true" draggable="false" showEffect="fade" hideEffect="explode">
+                <h:form id="form_delete_drivePointDestination">
+                    <h:panelGrid columns="1" cellpadding="5" style="width: 100%;">
+                        <h:outputLabel value="Вы действительно хотите удалить данного объекта?" />
+                        <h:outputLabel style="font-weight: bold;" value="Название объекта: #{driveBackingBean.selectedDrivePointDestination.linkToObject}"/>
+                        <h:panelGrid columns="2" cellpadding="5" style="margin: 0 auto;">
+                            <p:commandButton icon="fa fa-times-circle fa-fw fa-fvm" value="Удалить" update=":form_drive_edit:form_drivePointDestination:table_drivePointsDestination" actionListener="#{driveController.buttonActionRemoveDrivePointDestination}"  oncomplete="PF('dlg_delete_drivePointDestination').hide();" />
+                            <p:commandButton value="Отмена" onclick="PF('dlg_delete_drivePointDestination').hide();" />
+                        </h:panelGrid>
+                    </h:panelGrid>
+                </h:form>
+            </p:dialog>
+
+            <p:dialog id="dialog_update_driveStatesDistances" header="Обновление расстояний" widgetVar="dlg_update_driveStatesDistances" onShow="refreshStatesDistance()" resizable="false" modal="true" draggable="false" closable="false">
+                <h:form id="form_update_driveStatesDistances">
+                    <h:panelGrid columns="1" cellpadding="5" style="margin: 0 auto;">
+                        <p:graphicImage name="icons/processing.gif"/>
+                    </h:panelGrid>
+                    <p:remoteCommand name="refreshStatesDistance"  update=":form_drive_edit:form_driveState:table_driveStates" actionListener="#{driveController.refreshStatesDistance}" oncomplete="PF('dlg_update_driveStatesDistances').hide();"/>
+                </h:form>
+            </p:dialog>
+
+            <p:dialog id="dialog_build_driveStates" header="Построение карты маршрута" widgetVar="dlg_build_driveStates" onShow="buildDriveStatesMap()" resizable="false" modal="true" draggable="false" closable="false">
+                <h:form id="form_build_driveState">
+                    <h:panelGrid columns="1" cellpadding="5" style="margin: 0 auto;">
+                        <p:graphicImage name="icons/processing.gif"/>
+                    </h:panelGrid>
+                    <p:remoteCommand name="buildDriveStatesMap" update="dialog_show_driveStates" actionListener="#{driveController.buildMapForStages}" oncomplete="PF('dlg_build_driveStates').hide();PF('dlg_show_driveStates').show();" />
+                </h:form>
+            </p:dialog>
+
+            <p:dialog id="dialog_show_driveStates" header="Карта маршрута" widgetVar="dlg_show_driveStates" resizable="false" modal="true" draggable="false">
+                <p:gmap type="ROADMAP" center="56.005077, 51.713728" zoom="3" model="#{driveBackingBean.driveStagesMap}" style="width:800px;height:600px;"/>
+            </p:dialog>
+
+            <p:dialog id="dialog_show_driveFromCoordinates" header="Место положение #{driveBackingBean.selectedDrivePoint.linkToObject} #{driveBackingBean.selectedDrivePoint.coordinates}" widgetVar="dlg_show_driveFromCoordinates" resizable="false" modal="true" draggable="false">
+                <p:gmap id="id_driveFromCoordinates" center="56.005077, 51.713728" zoom="10" type="ROADMAP" model="#{driveBackingBean.driveFromPointMap}" style="width:800px;height:600px;">
+                <p:ajax event="markerDrag" listener="#{driveController.onMarkerOfSourPointDrag}" update="form_addNewDrivePointForSource" />
+                </p:gmap>
+            </p:dialog>
+
+            <p:dialog id="dialog_show_driveToCoordinates" header="Место положение #{driveBackingBean.selectedDrivePointDestination.linkToObject} #{driveBackingBean.selectedDrivePointDestination.coordinates}" widgetVar="dlg_show_driveToCoordinates"  resizable="false" modal="true" draggable="false">
+                <p:gmap id="id_driveToCoordinates" center="56.005077, 51.713728" zoom="10" type="ROADMAP" model="#{driveBackingBean.driveFromPointMapOfDestination}" style="width:800px;height:600px;"/>
+            </p:dialog>
+
+            <p:dialog id="dialog_show_driveFromPutCoordinates" header="Место положение" widgetVar="dlg_show_driveFromPutCoordinates" resizable="false" modal="true" draggable="false">
+                <p:gmap id="id_driveFromPutCoordinates" center="56.005077, 51.713728" zoom="10" type="ROADMAP" model="#{driveBackingBean.driveFromPointPutMap}" onPointClick="handlePointClick(event);" widgetVar="map" style="width:800px;height:600px;">
+                    <p:ajax event="markerDrag" listener="#{driveController.onMarkerOfSourPointDrag}" update="form_addNewDrivePointForSource" />
+                </p:gmap>
+            </p:dialog>
+
+            <p:dialog id="dialog_show_driveFromToCoordinates" header="Место положение" widgetVar="dlg_show_driveToPutCoordinates" resizable="false" modal="true" draggable="false">
+                <p:gmap id="id_driveFromToCoordinates" center="56.005077, 51.713728" zoom="10" type="ROADMAP" model="#{driveBackingBean.driveFromPointPutMapOfDestination}" onPointClick="handlePointClickDestination(event);" widgetVar="mapDestination" style="width:800px;height:600px;">
+                    <p:ajax event="markerDrag" listener="#{driveController.onMarkerOfSourPointDragDestinationPoint}" update="form_addNewDrivePointForDestination" />
+                </p:gmap>
+            </p:dialog>
+
+            <p:dialog style="width:1100px; max-width: 1100px; max-height: 800px; overflow: auto;" id="dialog_responsible_choice" widgetVar="dlg_responsible_choice" resizable="false" modal="true" draggable="false" rendered="#{!canEditProducts}">
+                <h:form  id="form_choose_responsible">
+                    <div class="page_title">Пользователи</div>
+
+                    <div style="height: 5px;" />
+                    <p:dataTable id="table_responsible" var="responsible" value="#{driveController.getUsers()}" selectionMode="single" selection="#{driveBackingBean.responsibleUser}" rowKey="#{responsible}" rows="15" rowsPerPageTemplate="10,25,50,100" paginator="true"
+                                 paginatorAlwaysVisible="true" filteredValue="#{driveBackingBean.filteredResponsibleUsers}" paginatorTemplate="{CurrentPageReport} {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}" currentPageReportTemplate="Контрагентов всего {totalRecords}. Страница {currentPage} из {totalPages}"
+                                 emptyMessage="Не найдено" widgetVar="responsibleWidgetVar">
+
+                        <p:ajax event="rowSelect" update=":form_choose_responsible:buttonChoiceResponsible" />
+                        <p:ajax event="rowUnselect" update=":form_choose_responsible:buttonChoiceResponsible" />
+                        <p:ajax event="rowDblselect" listener="#{driveController.doubleClickSelectedRowForChooseResponsible}" update=":form_drive_edit:form_driveState:table_driveStates"
+                                onsuccess="PF('dlg_responsible_choice').hide();"/>
+
+                        <f:facet name="header">
+                            <p:outputPanel>
+                                <h:outputText style="margin-right:5px;" value="Поиск:" />
+                                <p:inputText id="globalFilter" onkeyup="PF('responsibleWidgetVar').filter()" style="width:150px" placeholder="Поиск по названию, ИНН, ОГРН"/>
+                            </p:outputPanel>
+                        </f:facet>
+
+                        <p:column style="width:20px; text-align: center;" priority="1">
+                            <f:facet name="header">
+                                <i class="fa fa-check" />
+                            </f:facet>
+                            <p:commandButton icon="fa fa-check" actionListener="#{driveController.setContractorOfResponsible(responsible)}" update=":form_drive_edit:form_driveState:table_driveStates"
+                                             onsuccess="PF('dlg_responsible_choice').hide();"/>
+                        </p:column>
+
+                        <p:column headerText="Имя" filterStyle="display:none" filterBy="#{responsible.title}" filterMatchMode="contains" style="white-space:nowrap;" priority="1">
+                            <h:outputText value="#{responsible.title}" />
+                        </p:column>
+
+                        <p:column headerText="Роль" filterStyle="display:none" filterBy="#{userService.getStringOfUserRoles(responsible.userRoles)}" filterMatchMode="contains" style="white-space:nowrap;" priority="2">
+                            <h:outputText value="#{userService.getStringOfUserRoles(responsible.userRoles)}" />
+                        </p:column>
+
+                    </p:dataTable>
+                    <h:panelGrid columns="2" cellpadding="5" style="margin: 0 auto;">
+                        <p:commandButton id="buttonChoiceResponsible" icon="fa fa-check fa-fw fa-fvm" value="Выбор"
+                                         update=":form_drive_edit:form_driveState:table_driveStates"  oncomplete="PF('dlg_responsible_choice').hide();" actionListener="#{driveController.doubleClickSelectedRowForChooseResponsible}" disabled="#{driveBackingBean.responsibleUser==null}" />
+                        <p:commandButton value="Отмена" onclick="PF('dlg_responsible_choice').hide();" />
+                    </h:panelGrid>
+                </h:form>
+            </p:dialog>
+
+            <p:dialog style="width:1100px; max-width: 1100px; max-height: 800px; overflow: auto;" id="dialog_creator_choice" widgetVar="dlg_driveCreator_choice" resizable="false" modal="true" draggable="false" rendered="#{!canEditProducts}">
+                <h:form  id="form_choose_creator">
+                    <div class="page_title">Пользователи</div>
+
+                    <div style="height: 5px;" />
+                    <p:dataTable id="table_creator" var="creator" value="#{driveController.getUsers()}" selectionMode="single" selection="#{driveBackingBean.creatorUser}" rowKey="#{creator}" rows="15" rowsPerPageTemplate="10,25,50,100" paginator="true"
+                                 paginatorAlwaysVisible="true" filteredValue="#{driveBackingBean.filteredCreatorUsers}" paginatorTemplate="{CurrentPageReport} {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}" currentPageReportTemplate="Контрагентов всего {totalRecords}. Страница {currentPage} из {totalPages}"
+                                 emptyMessage="Не найдено" widgetVar="creatorWidgetVar">
+
+                        <p:ajax event="rowSelect" update=":form_choose_creator:buttonChoiceCreator" />
+                        <p:ajax event="rowUnselect" update=":form_choose_creator:buttonChoiceCreator" />
+                        <p:ajax event="rowDblselect" listener="#{driveController.doubleClickSelectedRowForChooseCreator}" update=":form_drive_edit:creator_choose_id"
+                                onsuccess="PF('dlg_driveCreator_choice').hide();"/>
+
+                        <f:facet name="header">
+                            <p:outputPanel>
+                                <h:outputText style="margin-right:5px;" value="Поиск:" />
+                                <p:inputText id="globalFilter" onkeyup="PF('creatorWidgetVar').filter()" style="width:150px" placeholder="Поиск по названию, ИНН, ОГРН"/>
+                            </p:outputPanel>
+                        </f:facet>
+
+                        <p:column style="width:20px; text-align: center;" priority="1">
+                            <f:facet name="header">
+                                <i class="fa fa-check" />
+                            </f:facet>
+                            <p:commandButton icon="fa fa-check" actionListener="#{driveController.setContractorOfCreator(creator)}" update=":form_drive_edit:creator_choose_id"
+                                             onsuccess="PF('dlg_driveCreator_choice').hide();"/>
+                        </p:column>
+
+                        <p:column headerText="Имя" filterStyle="display:none" filterBy="#{creator.title}" filterMatchMode="contains" style="white-space:nowrap;" priority="1">
+                            <h:outputText value="#{creator.title}" />
+                        </p:column>
+                        <p:column headerText="Роль" filterStyle="display:none" filterBy="#{userService.getStringOfUserRoles(creator.userRoles)}" filterMatchMode="contains" style="white-space:nowrap;" priority="2">
+                            <h:outputText value="#{userService.getStringOfUserRoles(creator.userRoles)}" />
+                        </p:column>
+                        <!--<p:column headerText="#{msgs['contractor.OGRN']}" filterStyle="display:none"  filterBy="#{contractor.ogrn}" filterMatchMode="contains" style="white-space:nowrap;" priority="3">-->
+                        <!--<h:outputText value="#{contractor.ogrn}" />-->
+                        <!--</p:column>-->
+                    </p:dataTable>
+                    <h:panelGrid columns="2" cellpadding="5" style="margin: 0 auto;">
+                        <p:commandButton id="buttonChoiceCreator" icon="fa fa-check fa-fw fa-fvm" value="Выбор"
+                                         update=":form_drive_edit:creator_choose_id"  oncomplete="PF('dlg_driveCreator_choice').hide();" actionListener="#{driveController.doubleClickSelectedRowForChooseCreator}" disabled="#{driveBackingBean.creatorUser==null}" />
+                        <p:commandButton value="Отмена" onclick="PF('dlg_driveCreator_choice').hide();" />
+                    </h:panelGrid>
+                </h:form>
+            </p:dialog>
+
+            <p:dialog widgetVar="dlg" showEffect="fade">
+                <h:form prependId="false">
+                    <h:panelGrid columns="2">
+                        <h:outputLabel for="title" value="Объект:" />
+                        <p:inputText id="title" value="#{driveBackingBean.selectedDrivePoint.linkToObject}" />
+
+                        <f:facet name="footer">
+                            <p:commandButton value="Сохранить" actionListener="#{driveController.addMarkerForSourcePoint()}" onsuccess="PF('dlg_show_driveFromPutCoordinates').hide();" update="form_addNewDrivePointForSource" oncomplete="markerAddComplete()" />
+                            <p:commandButton value="Отмена" onclick="return cancel()" />
+                        </f:facet>
+                    </h:panelGrid>
+
+                    <h:inputHidden id="lat" value="#{driveBackingBean.lat}" />
+                    <h:inputHidden id="lng" value="#{driveBackingBean.lng}" />
+                </h:form>
+            </p:dialog>
+
+            <p:dialog widgetVar="dlgDestination" showEffect="fade">
+                <h:form prependId="false">
+                    <h:panelGrid columns="2">
+                        <h:outputLabel for="title" value="Объект:" />
+                        <p:inputText id="titleDest" value="#{driveBackingBean.selectedDrivePointDestination.linkToObject}" />
+
+                        <f:facet name="footer">
+                            <p:commandButton value="Сохранить" actionListener="#{driveController.addMarkerForSourcePointDestination()}" onsuccess="PF('dlg_show_driveToPutCoordinates').hide();" update="form_addNewDrivePointForDestination id_driveFromToCoordinates" oncomplete="markerAddCompleteDestination()" />
+                            <p:commandButton value="Отмена" onclick="return cancel()" />
+                        </f:facet>
+                    </h:panelGrid>
+
+                    <h:inputHidden id="latDest" value="#{driveBackingBean.lat}" />
+                    <h:inputHidden id="lngDest" value="#{driveBackingBean.lng}" />
+                </h:form>
+            </p:dialog>
+
+            <p:dialog id="picture" widgetVar="dlg_driStatePhoto" header="Фотографии состояние" resizable="false" showEffect="clip" hideEffect="clip">
+                <h:form  id="form_show_driveStatePhoto">
+                <p:graphicImage name="#{driveBackingBean.streamedContent}" />
+                </h:form>
+            </p:dialog>
+
+            <script type="text/javascript">
+                var currentMarker = null;
+
+                function handlePointClickDestination(event) {
+                    if(currentMarker === null) {
+                        document.getElementById('latDest').value = event.latLng.lat();
+                        document.getElementById('lngDest').value = event.latLng.lng();
+
+                        currentMarker = new google.maps.Marker({
+                            position:new google.maps.LatLng(event.latLng.lat(), event.latLng.lng())
+                        });
+
+                        PF('mapDestination').addOverlay(currentMarker);
+
+                        PF('dlgDestination').show();
+                    }
+                }
+
+                function markerAddCompleteDestination() {
+                    var title = document.getElementById('titleDest');
+                    currentMarker.setTitle(title.value);
+                    title.value = "";
+
+                    currentMarker = null;
+                    PF('dlgDestination').hide();
+                }
+
+                function cancel() {
+                    PF('dlgDestination').hide();
+                    currentMarker.setMap(null);
+                    currentMarker = null;
+                    return false;
+                }
+            </script>
+
+            <script type="text/javascript">
+                var currentMarker = null;
+
+                function handlePointClick(event) {
+                    if(currentMarker === null) {
+                        document.getElementById('lat').value = event.latLng.lat();
+                        document.getElementById('lng').value = event.latLng.lng();
+
+                        currentMarker = new google.maps.Marker({
+                            position:new google.maps.LatLng(event.latLng.lat(), event.latLng.lng())
+                        });
+
+                        PF('map').addOverlay(currentMarker);
+
+                        PF('dlg').show();
+                    }
+                }
+
+                function markerAddComplete() {
+                    var title = document.getElementById('title');
+                    currentMarker.setTitle(title.value);
+                    title.value = "";
+
+                    currentMarker = null;
+                    PF('dlg').hide();
+                }
+
+                function cancel() {
+                    PF('dlg').hide();
+                    currentMarker.setMap(null);
+                    currentMarker = null;
+
+                    return false;
+                }
+            </script>
+
+            <h:form id="form_drive_edit">
+                <div class="ui-fluid" style="max-width: 800px;">
+                    <div class="ui-grid ui-grid-responsive">
+
+                        <div class="ui-grid-row resp_grid_mar_tb_5">
+                            <div class="ui-grid-col-1 resp_ui-grid-col-1">
+                                <p:outputLabel value="##{msgs['drive.driveSerial']}"/>
+                            </div>
+
+                            <div class="ui-grid-col-5">
+                                <p:inputText value="#{driveBackingBean.selectedDrive.driveSerial}"/>
+                            </div>
+                        </div>
+
+                        <div class="ui-grid-row resp_grid_mar_tb_5">
+                            <div class="ui-grid-col-1 resp_ui-grid-col-1">
+                                <p:outputLabel value="#{msgs['drive.driveStatus']}" />
+                            </div>
+
+                            <div class="ui-grid-col-5">
+                                <p:outputPanel>
+                                    <p:selectOneMenu value="#{driveBackingBean.selectedDrive.driveStatus}" converter="driveStatusConverter">
+                                        <f:selectItems value="#{driveBackingBean.driveStatuses}" var="driveStatus" itemValue="#{driveStatus}" itemLabel="#{driveStatus.name}" />
+                                    </p:selectOneMenu>
+                                </p:outputPanel>
+                            </div>
+                        </div>
+
+                        <div class="ui-grid-row resp_grid_mar_tb_5">
+                            <div class="ui-grid-col-1 resp_ui-grid-col-1">
+                                <p:outputLabel value="#{msgs['drive.driveState']}"/>
+                            </div>
+
+                            <div class="ui-grid-col-5">
+                                <p:outputLabel >
+                                    <h:outputText id="currentDriveStateDate" value="#{driveService.getCurrentStateOfDrive(driveBackingBean.selectedDrive.getDriveStatesList())}"/>
+                                    <h:outputText value="(" rendered="#{driveService.getCurrentStateOfDriveObject(driveBackingBean.selectedDrive.getDriveStatesList()).getResponsible()!=null}"/>
+                                    <ui:repeat var="user" value="#{driveService.getCurrentStateOfDriveObject(driveBackingBean.selectedDrive.getDriveStatesList()).getResponsible().userRoles}">
+                                        <h:outputText value="#{user.name}" rendered="#{driveService.getCurrentStateOfDriveObject(driveBackingBean.selectedDrive.getDriveStatesList()).getResponsible()!=null}"/>
+                                    </ui:repeat>
+                                    <h:outputText value=")"/>
+                                </p:outputLabel>
+                            </div>
+                        </div>
+
+                        <div class="ui-grid-row resp_grid_mar_tb_5">
+                            <div class="ui-grid-col-1 resp_ui-grid-col-1">
+                                <p:outputLabel value="#{msgs['drive.driveProdcut']}" />
+                            </div>
+                            <div class="ui-grid-col-5">
+                                <p:inputTextarea rows="2" value="#{driveBackingBean.selectedDrive.productName}"  disabled="#{canEditProducts}" />
+                            </div>
+                        </div>
+
+
+                        <div style="height: 5px;" />
+
+                        <div class="ui-grid-row resp_grid_mar_tb_5">
+                            <div class="ui-grid-col-1 resp_ui-grid-col-1">
+                                <p:outputLabel value="#{msgs['drive.company']}" />
+                            </div>
+                        <div class="ui-grid-col-5">
+                        <p:outputPanel rendered="#{!canEditProducts}">
+                            <table width="100%" border="0" cellpadding="0" cellspacing="0">
+                        <tr>
+                        <td><p:inputText styleClass="field_readonly" id="contractor_of_company_choose_id" readonly="true" value="#{driveBackingBean.selectedDrive.company.nameShort!=null ? driveBackingBean.selectedDrive.company.nameShort : ''}"/></td>
+                        <td style="width: 30px;" align="right"><p:commandButton style="width:30px;" update="form_choose_contractors_of_company" icon="fa fa-list-ul" onsuccess="PF('dlg_contractor_of_company_choice').show();" rendered="#{!canEditProducts}"/></td>
+                        </tr>
+                        </table>
+                        </p:outputPanel>
+                        </div>
+                        </div>
+
+                        <div class="ui-grid-row resp_grid_mar_tb_5">
+                            <div class="ui-grid-col-1 resp_ui-grid-col-1">
+                                <p:outputLabel value="#{msgs['drive.carrier']}" />
+                            </div>
+                            <div class="ui-grid-col-5">
+                                <p:outputPanel rendered="#{!canEditProducts}">
+                                    <table width="100%" border="0" cellpadding="0" cellspacing="0">
+                                        <tr>
+                                            <td><p:inputText styleClass="field_readonly" id="contractor_of_carrier_choose_id" readonly="true" value="#{driveBackingBean.selectedDrive.carrier.nameShort!=null ? driveBackingBean.selectedDrive.carrier.nameShort : ''}"/></td>
+                                            <td style="width: 30px;" align="right"><p:commandButton style="width:30px;" update="form_choose_contractor_of_carrier" icon="fa fa-list-ul" onsuccess="PF('dlg_contractor_of_carrier_choice').show();" rendered="#{!canEditProducts}"/></td>
+                                        </tr>
+                                    </table>
+                                </p:outputPanel>
+                            </div>
+                        </div>
+
+                        <div class="ui-grid-row resp_grid_mar_tb_5">
+                            <div class="ui-grid-col-1 resp_ui-grid-col-1">
+                                <p:outputLabel value="#{msgs['drive.receiver']}" />
+                            </div>
+                            <div class="ui-grid-col-5">
+                                <p:outputPanel rendered="#{!canEditProducts}">
+                                    <table width="100%" border="0" cellpadding="0" cellspacing="0">
+                                        <tr>
+                                            <td><p:inputText styleClass="field_readonly" id="contractor_of_customer_choose_id" readonly="true" value="#{driveBackingBean.selectedDrive.receiver.nameShort!=null ? driveBackingBean.selectedDrive.receiver.nameShort : ''}"/></td>
+                                            <td style="width: 30px;" align="right"><p:commandButton style="width:30px;" update="form_choose_contractor_of_customer" icon="fa fa-list-ul" onsuccess="PF('dlg_contractor_of_customer_choice').show();" rendered="#{!canEditProducts}"/></td>
+                                        </tr>
+                                    </table>
+                                </p:outputPanel>
+                            </div>
+                        </div>
+
+                        <div style="height: 5px;" />
+
+                        <div class="ui-grid-row resp_grid_mar_tb_5">
+                            <div class="ui-grid-col-1 resp_ui-grid-col-1">
+                                <p:outputLabel value="#{msgs['drive.vehicleNumber']}" />
+                            </div>
+                            <div class="ui-grid-col-5">
+                                <p:outputPanel rendered="#{!canEditProducts}">
+                                    <table width="100%" border="0" cellpadding="0" cellspacing="0">
+                                        <tr>
+                                            <td><p:inputText styleClass="field_readonly" id="vehicle_choose_id" readonly="true" value="#{driveBackingBean.selectedDrive.vehicle.truck.govNumber!=null ? driveBackingBean.selectedDrive.vehicle.truck.govNumber : ''}"/></td>
+                                            <td style="width: 30px;" align="right"><p:commandButton style="width:30px;" update="form_edit_vehicles" icon="fa fa-list-ul" onsuccess="PF('dlg_car_choice').show();" rendered="#{!canEditProducts}"/></td>
+                                        </tr>
+                                    </table>
+                                </p:outputPanel>
+                            </div>
+                        </div>
+
+                        <div class="ui-grid-row resp_grid_mar_tb_5">
+                            <div class="ui-grid-col-1 resp_ui-grid-col-1">
+                                <p:outputLabel value="#{msgs['drive.logistian']}" />
+                            </div>
+
+                            <div class="ui-grid-col-5">
+                                <p:outputPanel id="updateIdLogistianAccordingToCar">
+                                    <p:selectOneMenu  value="#{driveBackingBean.selectedDrive.logistician}" converter="userConverter"
+                                                      var="logistianOfVehicle">
+                                        <f:selectItem  itemLabel="[Не назначен]" itemValue="#{null}" />
+                                        <f:selectItems value="#{vehicleController.loadAllLogicians()}" var="logicians" itemLabel="#{logicians.title}" itemValue="#{logicians}" />
+                                        <p:column>
+                                            <h:outputText styleClass="#{logistianOfVehicle.equals(driveBackingBean.selectedDrive.vehicle.logistician) ? 'VehicleLogistian' : null}"
+                                                          value="#{logistianOfVehicle.title}" />
+                                        </p:column>
+                                    </p:selectOneMenu>
+                                </p:outputPanel>
+                            </div>
+                        </div>
+
+                        <div class="ui-grid-row resp_grid_mar_tb_5">
+                            <div class="ui-grid-col-1 resp_ui-grid-col-1">
+                                <p:outputLabel value="#{msgs['drive.driverFullname']}" />
+                            </div>
+                            <div class="ui-grid-col-5">
+                                <p:outputPanel>
+                                    <table width="100%" border="0" cellpadding="0" cellspacing="0">
+                                        <tr>
+                                            <td><p:inputText styleClass="field_readonly" id="driver_choose_id" readonly="true" value="#{driveBackingBean.selectedDrive.driver.title!=null ? driveBackingBean.selectedDrive.driver.title : ''}"/></td>
+                                            <td style="width: 30px;" align="right"><p:commandButton style="width:30px;" update="form_driver_choice" icon="fa fa-list-ul" onsuccess="PF('dlg_driver_choice').show();" rendered="#{!canEditProducts}"/></td>
+                                        </tr>
+                                    </table>
+                                </p:outputPanel>
+                            </div>
+                        </div>
+
+                        <div style="height: 5px;" />
+
+                        <div class="ui-grid-row resp_grid_mar_tb_5">
+                            <div class="ui-grid-col-1 resp_ui-grid-col-1">
+                                <p:outputLabel value="#{msgs['drive.startPlan']}" />
+                            </div>
+                            <div class="ui-grid-col-5">
+                                <p:calendar value="#{driveBackingBean.selectedDrive.dateStartPlan}" locale="ru" pattern="dd.MM.yyyy HH:mm" />
+                            </div>
+                        </div>
+
+                        <div class="ui-grid-row resp_grid_mar_tb_5">
+                            <div class="ui-grid-col-1 resp_ui-grid-col-1">
+                                <p:outputLabel value="#{msgs['drive.startFact']}" />
+                            </div>
+                            <div class="ui-grid-col-5">
+                                <p:calendar value="#{driveBackingBean.selectedDrive.dateStartFact}" locale="ru" pattern="dd.MM.yyyy HH:mm" />
+                            </div>
+                        </div>
+
+                        <div class="ui-grid-row resp_grid_mar_tb_5">
+                            <div class="ui-grid-col-1 resp_ui-grid-col-1">
+                                <p:outputLabel value="#{msgs['drive.finishPlan']}" />
+                            </div>
+                            <div class="ui-grid-col-5">
+                                <p:calendar value="#{driveBackingBean.selectedDrive.dateFinishPlan}" locale="ru" pattern="dd.MM.yyyy HH:mm" />
+                            </div>
+                        </div>
+
+                        <div class="ui-grid-row resp_grid_mar_tb_5">
+                            <div class="ui-grid-col-1 resp_ui-grid-col-1">
+                                <p:outputLabel value="#{msgs['drive.finishFact']}" />
+                            </div>
+                            <div class="ui-grid-col-5">
+                                <p:calendar value="#{driveBackingBean.selectedDrive.dateFinishFact}" locale="ru" pattern="dd.MM.yyyy HH:mm" />
+                            </div>
+                        </div>
+
+                        <div style="height: 5px;" />
+
+                        <div class="ui-grid-row resp_grid_mar_tb_5">
+                            <div class="ui-grid-col-1 resp_ui-grid-col-1">
+                                <p:outputLabel value="#{msgs['drive.quantityPlan']}" />
+                            </div>
+                            <div class="ui-grid-col-5">
+                                <p:inputText value="#{driveBackingBean.selectedDrive.quantityPlan}" disabled="#{canEditProducts}">
+                                    <f:convertNumber minIntegerDigits="1" minFractionDigits="2" groupingUsed="true" />
+                                </p:inputText>
+                            </div>
+                        </div>
+
+                        <div class="ui-grid-row resp_grid_mar_tb_5">
+                            <div class="ui-grid-col-1 resp_ui-grid-col-1">
+                                <p:outputLabel value="#{msgs['drive.quatityFact']}" />
+                            </div>
+                            <div class="ui-grid-col-5">
+                                <p:inputText value="#{driveBackingBean.selectedDrive.quantityFact}" disabled="#{canEditProducts}">
+                                    <f:convertNumber minIntegerDigits="1" minFractionDigits="2" groupingUsed="true" />
+                                </p:inputText>
+                            </div>
+                        </div>
+
+                        <div class="ui-grid-row resp_grid_mar_tb_5">
+                            <div class="ui-grid-col-1 resp_ui-grid-col-1">
+                                <p:outputLabel value="#{msgs['drive.volumePlan']}" />
+                            </div>
+                            <div class="ui-grid-col-5">
+                                <p:inputText value="#{driveBackingBean.selectedDrive.volumePlan}" disabled="#{canEditProducts}" >
+                                    <f:convertNumber minIntegerDigits="1" minFractionDigits="2" groupingUsed="true" />
+                                </p:inputText>
+                            </div>
+                        </div>
+
+                        <div class="ui-grid-row resp_grid_mar_tb_5">
+                            <div class="ui-grid-col-1 resp_ui-grid-col-1">
+                                <p:outputLabel value="#{msgs['drive.volumeFact']}" />
+                            </div>
+                            <div class="ui-grid-col-5">
+                                <p:inputText value="#{driveBackingBean.selectedDrive.volumeFact}" disabled="#{canEditProducts}">
+                                    <f:convertNumber minIntegerDigits="1" minFractionDigits="2" groupingUsed="true" />
+                                </p:inputText>
+                            </div>
+                        </div>
+
+
+
+                        <div style="height: 5px;" />
+                        <p:outputLabel value="#{msgs['drive.order']}" />
+
+                        <div style="height: 10px;" />
+
+
+                        <h:form id="form_driveOrder">
+                            <table width="145%" border="0" cellpadding="0" cellspacing="0">
+                            <tr>
+                                <td style="width: 30px;" align="left">
+                            <p:menubar style="border: none" id="itemsCommandsForOrder">
+                                <p:menuitem
+                                            icon="fa fa-plus-circle fa-fw fa-fvm"
+                                            onclick="PF('dlg_order_choice').show();"
+                                            update="form_choose_order"/>
+                                <p:menuitem  icon="fa fa-times-circle fa-fw fa-fvm"
+                                            actionListener="#{driveController.deleteSelectedDriveOrder}"
+                                            disabled="#{driveBackingBean.selectedOrder==null}">
+                                </p:menuitem>
+                            </p:menubar>
+                                </td>
+                                <td>
+
+                            <p:dataTable id="table_driveOrders" var="driveOrder" value="#{driveBackingBean.selectedDrive.getOrderList()}" editable="true" editMode="cell" selectionMode="single" selection="#{driveBackingBean.selectedOrder}" rowKey="#{drivePoint}" rows="5"
+                                         paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}" currentPageReportTemplate="Клиентов всего {totalRecords}. Страница {currentPage} из {totalPages}" emptyMessage="Не найдено">
+
+                                <p:ajax event="rowSelect" update=":form_drive_edit:form_driveOrder:itemsCommandsForOrder" />
+                                <p:ajax event="rowUnselect" update=":form_drive_edit:form_driveOrder:itemsCommandsForOrder" />
+
+                                <p:column headerText="#{msgs['driveOrder.number']}">
+                                    <h:outputText value="#{driveOrder.number}"/>
+                                </p:column>
+
+                                <p:column headerText="#{msgs['driveOrder.createdDate']}">
+                                    <h:outputText value="#{driveOrder.createdDate}"/>
+                                </p:column>
+
+                                <p:column headerText="#{msgs['driveOrder.manager']}">
+                                    <h:outputText value="#{driveOrder.ownerUser}"/>
+                                </p:column>
+
+                                <p:column headerText="#{msgs['driveOrder.description']}" >
+                                    <h:outputText value="#{driveOrder.loadDescription}"/>
+                                </p:column>
+
+                            </p:dataTable>
+                                </td>
+                            </tr>
+                            </table>
+                        </h:form>
+
+                        <div style="height: 5px;" />
+                                <p:outputLabel value="#{msgs['drive.fromWhere']}" />
+                        <div style="height: 10px;" />
+
+                        <h:form id="form_drivePoint">
+                            <table width="145%" border="0" cellpadding="0" cellspacing="0">
+                            <tr>
+                            <td style="width: 30px;" align="left">
+                                <p:menubar style="border: none" id="itemsCommands">
+                                    <p:menuitem icon="fa fa-plus-circle fa-fw fa-fvm"
+                                                onclick="PF('dlg_addNewDrivePointForSource').show();"
+                                                update="form_addNewDrivePointForSource"
+                                                actionListener="#{driveController.buttonActionAddNewDriverPointForSource}"
+                                                process="@this"/>
+                                    <p:menuitem icon="fa fa-times-circle fa-fw fa-fvm"
+                                                onclick="PF('dlg_delete_drivePoint').show();"
+                                                update="form_delete_drivePoint"
+                                                disabled="#{driveBackingBean.selectedDrivePoint==null}">
+                                    </p:menuitem>
+                                </p:menubar>
+                            </td>
+                            <td>
+                                <p:dataTable id="table_drivePoints" var="drivePoint" value="#{driveBackingBean.selectedDrive.getSourceDrivePointsList()}" selectionMode="single" selection="#{driveBackingBean.selectedDrivePoint}" rowKey="#{drivePoint}" rows="5"
+                                             paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}" currentPageReportTemplate="Клиентов всего {totalRecords}. Страница {currentPage} из {totalPages}" emptyMessage="Не найдено">
+
+                                    <p:ajax event="rowSelect" update=":form_drive_edit:form_drivePoint:itemsCommands" />
+                                    <p:ajax event="rowUnselect" update=":form_drive_edit:form_drivePoint:itemsCommands" />
+
+                                    <p:column style="width:20px; text-align: center;" priority="1">
+                                        <f:facet name="header">
+                                            <i class="fa fa-edit" />
+                                        </f:facet>
+                                        <p:commandButton icon="fa fa-edit" process="@this" actionListener="#{driveController.editDrivePoint(drivePoint)}" update="form_addNewDrivePointForSource" onclick="PF('dlg_addNewDrivePointForSource').show();"/>
+                                    </p:column>
+
+                                    <p:column style="width: auto" headerText="#{msgs['drivePoint.object']}">
+                                        <h:outputText style="font-weight: bold" value="#{msgs['drivePoint.base.shipmentBase']}" rendered="#{drivePoint.typeOfObject==1}"/>
+                                        <h:outputText style="font-weight: bold" value="#{msgs['drivePoint.base.customer']}" rendered="#{drivePoint.typeOfObject==2}"/>
+                                        <h:outputText style="font-weight: bold" value="#{msgs['drivePoint.base.other']}" rendered="#{drivePoint.typeOfObject==3}"/>
+                                        <h:outputText value=" " />
+                                        <h:outputText value="#{drivePoint.linkToObject}" />
+                                    </p:column>
+
+
+                                    <p:column headerText="#{msgs['drivePoint.address']}">
+                                            <h:outputText value="#{drivePoint.address}" />
+                                    </p:column>
+
+
+                                    <p:column headerText="#{msgs['drivePoint.contactInfo']}" >
+                                            <h:outputText value="#{drivePoint.contact}" />
+                                    </p:column>
+
+                                    <p:column style="width:20px; text-align: center;">
+                                        <f:facet name="header">
+                                            <i class="fa fa-map-marker" />
+                                        </f:facet>
+                                        <p:commandButton id="btn" style="width:30px;" process="@this" actionListener="#{driveController.showDrivePointCoordinates(drivePoint)}" update="id_driveFromCoordinates" onsuccess="PF('dlg_show_driveFromCoordinates').show();" icon="fa fa-map-marker" />
+
+                                    </p:column>
+
+                                    <p:column headerText="#{msgs['drivePoint.description']}">
+                                            <h:outputText value="#{drivePoint.description}"/>
+                                    </p:column>
+
+                                </p:dataTable>
+                            </td>
+                            </tr>
+                            </table>
+                                </h:form>
+
+
+                        <div style="height: 10px;" />
+
+                        <div style="height: 10px;" />
+                        <p:outputLabel value="#{msgs['drive.toWhere']}" />
+                        <div style="height: 5px;" />
+
+                        <h:form id="form_drivePointDestination">
+                            <table width="145%" border="0" cellpadding="0" cellspacing="0">
+                            <tr>
+                            <td style="width: 30px;" align="left">
+                            <p:menubar style="border: none" id="itemsCommandsDestination">
+                                <p:menuitem icon="fa fa-plus-circle fa-fw fa-fvm"
+                                            onclick="PF('dlg_addNewDrivePointForDestination').show();"
+                                            update="form_addNewDrivePointForDestination"
+                                            actionListener="#{driveController.buttonActionAddNewDriverPointForDestination}"
+                                            process="@this"/>
+                                <p:menuitem icon="fa fa-times-circle fa-fw fa-fvm"
+                                            onclick="PF('dlg_delete_drivePointDestination').show();"
+                                            update="form_delete_drivePointDestination"
+                                            disabled="#{driveBackingBean.selectedDrivePointDestination==null}">
+                                </p:menuitem>
+                            </p:menubar>
+                            </td>
+                            <td>
+                            <p:dataTable id="table_drivePointsDestination" var="drivePoint"  value="#{driveBackingBean.selectedDrive.getDestinationDrivePointsList()}" selectionMode="single" selection="#{driveBackingBean.selectedDrivePointDestination}" rowKey="#{drivePoint}" rows="5"
+                                         paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}" currentPageReportTemplate="Клиентов всего {totalRecords}. Страница {currentPage} из {totalPages}" emptyMessage="Не найдено">
+
+                                <p:ajax event="rowSelect" update=":form_drive_edit:form_drivePointDestination:itemsCommandsDestination" />
+                                <p:ajax event="rowUnselect" update=":form_drive_edit:form_drivePointDestination:itemsCommandsDestination" />
+
+                                <p:column style="width:20px; text-align: center;" priority="1">
+                                    <f:facet name="header">
+                                        <i class="fa fa-edit" />
+                                    </f:facet>
+                                    <p:commandButton icon="fa fa-edit" process="@this" actionListener="#{driveController.editDrivePointDestination(drivePoint)}" update="form_addNewDrivePointForDestination" onclick="PF('dlg_addNewDrivePointForDestination').show();"/>
+                                </p:column>
+
+
+                                <p:column style="width: auto" headerText="#{msgs['drivePoint.object']}">
+                                    <h:outputText style="font-weight: bold" value="#{msgs['drivePoint.base.shipmentBase']}" rendered="#{drivePoint.typeOfObject==1}"/>
+                                    <h:outputText style="font-weight: bold" value="#{msgs['drivePoint.base.customer']}" rendered="#{drivePoint.typeOfObject==2}"/>
+                                    <h:outputText style="font-weight: bold" value="#{msgs['drivePoint.base.other']}" rendered="#{drivePoint.typeOfObject==3}"/>
+                                    <h:outputText value=" " />
+                                    <h:outputText value="#{drivePoint.linkToObject}" />
+                                </p:column>
+
+                                <p:column headerText="#{msgs['drivePoint.address']}">
+                                    <h:outputText value="#{drivePoint.address}" />
+                                </p:column>
+
+
+                                <p:column headerText="#{msgs['drivePoint.contactInfo']}" >
+                                    <h:outputText value="#{drivePoint.contact}" />
+                                </p:column>
+
+                                <p:column style="width:20px; text-align: center;">
+                                    <f:facet name="header">
+                                        <i class="fa fa-map-marker" />
+                                    </f:facet>
+                                    <p:commandButton id="btnDrivePointDestinationCoordinate" style="width:30px;" process="@this" actionListener="#{driveController.showDrivePointCoordinatesOfDestination(drivePoint)}" update="id_driveToCoordinates" onsuccess="PF('dlg_show_driveToCoordinates').show();" icon="fa fa-map-marker" />
+                                </p:column>
+
+                                <p:column headerText="#{msgs['drivePoint.description']}" >
+                                    <h:outputText value="#{drivePoint.description}"/>
+                                </p:column>
+
+                            </p:dataTable>
+                            </td>
+                            </tr>
+                            </table>
+                        </h:form>
+
+
+                        <div style="height: 10px;" />
+                        <p:outputLabel value="#{msgs['drive.driveStateHistory']}" />
+                        <div style="height: 5px;" />
+                        <h:form id="form_driveState">
+                            <table width="145%" border="0" cellpadding="0" cellspacing="0">
+                            <tr>
+                            <td style="width: 30px;" align="left">
+                            <p:menubar style="border: none" id="itemsCommandsForDriveState">
+                                <p:menuitem icon="fa fa-plus-circle fa-fw fa-fvm"
+                                            actionListener="#{driveController.buttonActionAddNewDriveState}"
+                                            process="@this"
+                                            update=":form_drive_edit:form_driveState:table_driveStates :form_drive_edit:currentDriveStateDate"/>
+                                <p:menuitem icon="fa fa-times-circle fa-fw fa-fvm"
+                                            onclick="PF('dlg_delete_driveState').show();" update="form_delete_driveState"
+                                            disabled="#{driveBackingBean.selectedDriveState==null}"/>
+                                <p:menuitem icon="fa fa-refresh fa-fw fa-fvm"
+                                            onclick="PF('dlg_update_driveStatesDistances').show();"/>
+                                <p:menuitem icon="fa fa-map fa-fw fa-fvm"
+                                            onclick="PF('dlg_build_driveStates').show();"/>
+                            </p:menubar>
+                            </td>
+                            <td>
+                            <p:dataTable id="table_driveStates" var="driveState" value="#{driveBackingBean.selectedDrive.getDriveStatesList()}" editable="true" editMode="cell" sortBy="#{driveState.modifiedDate}" selectionMode="single" selection="#{driveBackingBean.selectedDriveState}" rowKey="#{driveState}"
+                                         paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}" currentPageReportTemplate="Клиентов всего {totalRecords}. Страница {currentPage} из {totalPages}" emptyMessage="Не найдено">
+
+                                <p:ajax event="rowSelect" update=":form_drive_edit:form_driveState:itemsCommandsForDriveState" />
+                                <p:ajax event="rowUnselect" update=":form_drive_edit:form_driveState:itemsCommandsForDriveState" />
+
+                                <!--<p:ajax event="cellEdit" listener="#{driveController.onRowEditDriveState}" update="table_driveStates" />-->
+
+                                <p:column headerText="#{msgs['driveState.dataAndTime']}">
+                                    <p:cellEditor>
+                                    <f:facet name="output">
+                                        <h:outputText value="#{driveState.modifiedDate}">
+                                            <f:convertDateTime pattern="dd.MM.yyyy HH:mm" />
+                                        </h:outputText>
+                                    </f:facet>
+                                        <f:facet name="input">
+                                            <p:calendar value="#{driveState.modifiedDate}" locale="ru" pattern="dd.MM.yyyy HH:mm" />
+                                        </f:facet>
+                                    </p:cellEditor>
+
+                                </p:column>
+
+
+                                <p:column headerText="#{msgs['driveState.status']}" >
+                                    <p:cellEditor>
+                                        <f:facet name="output">
+                                            <h:outputText value="#{driveState.driveStateType.name}" />
+                                        </f:facet>
+                                        <f:facet name="input">
+                                            <p:selectOneMenu value="#{driveState.driveStateType}" converter="driveStateConverter">
+                                                <f:selectItem  noSelectionOption="true" itemLabel="[Не выбран]" />
+                                                <f:selectItems value="#{driveBackingBean.driveStateTypes}" var="driveStateTypes" itemValue="#{driveStateTypes}" itemLabel="#{driveStateTypes.name}" />
+                                            </p:selectOneMenu>
+                                        </f:facet>
+                                    </p:cellEditor>
+                                </p:column>
+
+                                <p:column headerText="#{msgs['driveState.objectData']}"  >
+                                    <!--<p:cellEditor>-->
+                                        <!--<f:facet name="output">-->
+                                            <h:outputText value="#{driveState.jsonData}"/>
+                                    <p:commandButton style="width:30px;" process="@this" actionListener="#{driveController.fileDownloadViewForState(driveStateService.findDriveStateDocument(driveState))}"  update="form_show_driveStatePhoto" icon="fa fa-camera" onsuccess="PF('dlg_driStatePhoto').show();"  rendered="#{driveStateService.findDriveStateDocument(driveState)!=null}"/>
+                                    <!--<p:commandButton style="width:30px;" process="@this" actionListener="#{driveController.fileDownloadViewForState(driveStateService.findDriveStateDocument(driveState))}"  update="form_show_driveStatePhoto" icon="ui-icon-arrowthick-1-s" onsuccess="PF('dlg_driStatePhoto').show();"  rendered="#{driveStateService.findDriveStateDocument(driveState)!=null}"/>-->
+
+                                            <!--<p:commandLink style="width:30px;" actionListener="#{documentController.fileDownloadView(driveStateService.findDriveStateDocument(driveState))}"  icon="ui-icon-arrowthick-1-s" rendered="#{driveStateService.findDriveStateDocument(driveState)!=null}">-->
+                                                <!--<p:fileDownload value="#{documentController.fileDownloadView(driveStateService.findDriveStateDocument(driveState))}" />-->
+                                            <!--</p:commandLink>-->
+                                        <!--</f:facet>-->
+                                        <!--<f:facet name="input">-->
+                                            <!--<p:inputText value="#{driveState.jsonData}"  />-->
+                                        <!--</f:facet>-->
+                                    <!--</p:cellEditor>-->
+                                </p:column>
+
+                                <!--<p:remoteCommand name="processFormEditCustomer" actionListener="#{documentController.fileDownloadView(driveStateService.findDriveStateDocument(driveState))}" />-->
+
+                                <p:column headerText="#{msgs['driveState.distance']}" >
+                                    <h:outputLabel value="#{driveState.distance}" >
+                                        <f:convertNumber pattern="#0.00" />
+                                    </h:outputLabel>
+                                </p:column>
+
+                                <p:column headerText="#{msgs['driveState.description']}" >
+                                    <p:cellEditor>
+                                        <f:facet name="output">
+                                            <h:outputText value="#{driveState.description}"/>
+                                        </f:facet>
+                                        <f:facet name="input">
+                                            <p:inputText value="#{driveState.description}" />
+                                        </f:facet>
+                                    </p:cellEditor>
+                                </p:column>
+
+                                <p:column  headerText="#{msgs['driveState.responsible']}" styleClass="singleLine" style="height: 10px; font-size: 8pt;">
+                                    <p:cellEditor>
+                                        <f:facet name="output">
+                                            <h:outputText value="#{driveState.responsible.title}" rendered="#{driveState.responsible!=null}"/>
+                                            <h:outputText value="(" rendered="#{driveState.responsible!=null}"/>
+                                            <ui:repeat var="user" value="#{driveState.responsible.userRoles}">
+                                                <h:outputText value="#{user.name}"/>
+                                            </ui:repeat>
+                                            <h:outputText value=")" rendered="#{driveState.responsible!=null}"/>
+                                            <h:outputText value="#{driveBackingBean.selectedDrive.vehicle.terminalVehicleID.username}" rendered="#{driveState.responsible==null}"/>
+                                        </f:facet>
+                                        <f:facet name="input">
+                                            <table width="100%" border="0" cellpadding="0" cellspacing="0">
+                                                <tr>
+                                                    <td><p:inputText styleClass="field_readonly" id="choose_responsible_id" readonly="true" value="#{driveState.responsible.title} (#{driveState.responsible.userRoles.get(0).name})"/></td>
+                                                    <td style="width: 30px;" align="right"><p:commandButton style="width:30px;" process="@this" actionListener="#{driveController.editResponsible(driveState)}"  update="form_choose_responsible" icon="fa fa-list-ul" onsuccess="PF('dlg_responsible_choice').show();"  rendered="#{!canEditProducts}"/></td>
+                                                </tr>
+                                            </table>
+                                        </f:facet>
+                                    </p:cellEditor>
+                                </p:column>
+
+                            </p:dataTable>
+                            </td>
+                            </tr>
+                            </table>
+                        </h:form>
+
+                        <div style="height: 5px;" />
+
+                        <div class="ui-grid-row resp_grid_mar_tb_5">
+                            <div class="ui-grid-col-1 resp_ui-grid-col-1">
+                                <p:outputLabel value="#{msgs['drive.description']}" />
+                            </div>
+                            <div class="ui-grid-col-5">
+                                <p:inputTextarea rows="3" value="#{driveBackingBean.selectedDrive.description}" disabled="#{canEditProducts}"/>
+                            </div>
+                        </div>
+
+                        <div class="ui-grid-row resp_grid_mar_tb_5">
+                            <div class="ui-grid-col-1 resp_ui-grid-col-1">
+                                <p:outputLabel value="#{msgs['drive.createdDate']}" />
+                            </div>
+                            <div class="ui-grid-col-5">
+                                <p:calendar value="#{driveBackingBean.selectedDrive.created}" locale="ru" pattern="dd.MM.yyyy HH:mm" />
+                            </div>
+                        </div>
+
+                        <div class="ui-grid-row resp_grid_mar_tb_5">
+                            <div class="ui-grid-col-1 resp_ui-grid-col-1">
+                                <p:outputLabel value="#{msgs['drive.creatorName']}" />
+                            </div>
+                            <div class="ui-grid-col-5">
+
+                                <p:outputPanel>
+                                    <table width="100%" border="0" cellpadding="0" cellspacing="0">
+                                        <tr>
+                                            <td><p:inputText styleClass="field_readonly" id="creator_choose_id" readonly="true" value="#{driveBackingBean.selectedDrive.createdUserid.title!=null ? driveBackingBean.selectedDrive.createdUserid.title : ''}"/></td>
+                                            <td style="width: 30px;" align="right"><p:commandButton update="form_choose_creator" onsuccess="PF('dlg_driveCreator_choice').show();" style="width:30px;"  icon="fa fa-list-ul"  rendered="#{!canEditProducts}"/></td>
+                                        </tr>
+                                    </table>
+                                </p:outputPanel>
+                            </div>
+                        </div>
+                </div>
+                </div>
+
+                <p:separator />
+                <div class="ui-grid ui-grid-responsive">
+                    <div class="ui-grid-row">
+                        <div class="ui-grid-col-1">
+                            <table width="100%" border="0" cellpadding="0" cellspacing="0">
+                                <tr>
+                                    <td><p:commandButton value="Сохранить" form="form_drive_edit"  actionListener="#{driveController.buttonActionSaveDrive}" rendered="#{!canEditProducts}"/></td>
+                                    <td align="right"><p:commandButton value="Отмена" process="@this" actionListener="#{driveController.buttonActionCancelSaveDrive}" rendered="#{!canEditProducts}"/></td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+            </h:form>
+
+        </ui:define>
+    </ui:composition>
+</h:body>
+</html>

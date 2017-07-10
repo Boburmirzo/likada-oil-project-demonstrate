@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" 
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:h="http://java.sun.com/jsf/html" xmlns:f="http://java.sun.com/jsf/core" xmlns:ui="http://java.sun.com/jsf/facelets" xmlns:p="http://primefaces.org/ui">
+<h:body>
+	<ui:composition template="/layout/forcab.xhtml">
+		<ui:define name="windowTitle">#{msgs['trailers']}</ui:define>
+		<ui:define name="content">
+		<ui:param name="canAddTrailers" value="#{loginController.hasAccessTo(enumBean.modelTrailer, enumBean.accessAdd)}" />
+		<ui:param name="canDeleteTrailers" value="#{loginController.hasAccessTo(enumBean.modelTrailer, enumBean.accessDelete)}" />
+		<ui:param name="canEditTrailers" value="#{loginController.hasAccessTo(enumBean.modelTrailer, enumBean.accessEdit)}" />
+		<p:outputPanel rendered="#{loginController.hasAccessTo(enumBean.modelTrailer, enumBean.accessView) or loginController.hasAccessTo(enumBean.modelTrailer, enumBean.accessEdit)}">
+
+			<p:dialog id="dialog_delete_trailer" header="Удаление прицепа" widgetVar="dlg_delete_trailer" resizable="false" modal="true" draggable="false">
+				<h:form id="form_trailer_delete">
+					<p:growl id="growl" showDetail="true"/>
+					<h:panelGrid columns="1" cellpadding="5" style="width: 100%;">
+						<h:outputLabel value="Вы действительно хотите удалить данный прицеп?" />
+						<h:panelGrid columns="2">
+							<h:outputLabel style="font-weight: bold;" value="#{msgs['trailers.title']}: #{trailerBackingBean.selectedTrailer.title}, " />
+							<h:outputLabel style="font-weight: bold;" value="#{msgs['trailers.id']}: #{trailerBackingBean.selectedTrailer.id}" />
+						</h:panelGrid>
+						<h:panelGrid columns="2" cellpadding="5" style="margin: 0 auto;">
+							<p:commandButton icon="fa fa-times-circle fa-fw fa-fvm" value="Удалить" update=":form_trailer_delete:growl :form_edit_trailers:toolbar_trailers :form_edit_trailers:table_trailers" actionListener="#{trailerController.deleteSelectedTrailer}" oncomplete="PF('dlg_delete_trailer').hide();"/>
+							<p:commandButton value="Отмена" onclick="PF('dlg_delete_trailer').hide();" />
+						</h:panelGrid>
+					</h:panelGrid>
+				</h:form>
+			</p:dialog>
+
+			<p:dialog id="dialog_edit_trailer" header="Редактирование прицепа" widgetVar="dlg_edit_trailer" resizable="false" modal="true" draggable="false">
+				<h:form id="form_trailer_edit">
+					<h:panelGrid columns="1" cellpadding="5" style="width: 100%;">
+						<h:panelGrid columns="2" cellpadding="5">
+							<h:outputLabel  value="#{msgs['trailers.title']}" />
+							<p:inputText value="#{trailerBackingBean.selectedTrailer.title}" />
+
+							<h:outputLabel  value="#{msgs['trailers.brand']}" />
+							<p:inputText value="#{trailerBackingBean.selectedTrailer.brand}" />
+
+							<h:outputLabel  value="#{msgs['trailers.model']}" />
+							<p:inputText value="#{trailerBackingBean.selectedTrailer.model}" />
+
+							<h:outputLabel  value="#{msgs['trailers.govNumber']}" />
+							<p:inputText value="#{trailerBackingBean.selectedTrailer.govNumber}" />
+
+							<h:outputLabel  value="#{msgs['trailers.calibration']}" />
+							<p:inputNumber value="#{trailerBackingBean.selectedTrailer.calibration}"/>
+
+							<h:outputLabel  value="#{msgs['trailers.capacity']}" />
+							<p:inputNumber value="#{trailerBackingBean.selectedTrailer.capacity}"/>
+
+							<h:outputLabel  value="#{msgs['trailers.bottomLoading']}" />
+							<p:selectBooleanCheckbox value="#{trailerBackingBean.selectedTrailer.bottomLoading}">
+								<p:ajax update="bottom_loading_calibration"/>
+							</p:selectBooleanCheckbox>
+
+							<h:outputLabel  value="#{msgs['trailers.bottomLoadingCalibration']}" />
+							<p:inputNumber id="bottom_loading_calibration" value="#{trailerBackingBean.selectedTrailer.bottomLoadingCalibration}" disabled="#{not trailerBackingBean.selectedTrailer.bottomLoading}"/>
+
+							<h:outputLabel value="#{msgs['trailers.description']}" />
+							<p:inputTextarea rows="3" value="#{trailerBackingBean.selectedTrailer.description}" />
+						</h:panelGrid>
+						<h:panelGrid columns="2" cellpadding="5" style="margin: 0 auto;">
+							<p:commandButton value="Сохранить" update=":form_trailer_delete:growl :form_edit_trailers:toolbar_trailers :form_edit_trailers:table_trailers" actionListener="#{trailerController.buttonActionSaveTrailer}" oncomplete="PF('dlg_edit_trailer').hide();PF('tableTrailers').filter()"/>
+							<p:commandButton value="Отмена" onclick="PF('dlg_edit_trailer').hide();" />
+						</h:panelGrid>
+					</h:panelGrid>
+				</h:form>
+			</p:dialog>
+
+			<h:form id="form_edit_trailers">
+				<p:menubar id="toolbar_trailers">
+					<p:menuitem value="Добавить" icon="fa fa-plus-circle fa-fw fa-fvm" actionListener="#{trailerController.makeNewSelectedTrailer}" update=":form_trailer_edit" oncomplete="PF('dlg_edit_trailer').show();" rendered="#{canAddTrailers}"/>
+					<p:menuitem value="Удалить" icon="fa fa-times-circle fa-fw fa-fvm" onclick="PF('dlg_delete_trailer').show();" update=":form_trailer_delete" disabled="#{trailerBackingBean.selectedTrailer == null or trailerController.isTrailerConnectedWithAnyVehicle(trailerBackingBean.selectedTrailer)}" rendered="#{canDeleteTrailers}"/>
+					</p:menubar>
+				<div style="height: 5px;" />
+
+				<p:dataTable id="table_trailers" widgetVar="tableTrailers" style="width:100%;" var="trailer" value="#{trailerController.trailers}" selectionMode="single" selection="#{trailerBackingBean.selectedTrailer}" rowKey="#{trailer.id}" sortBy="#{trailer.govNumber}" filteredValue="#{trailerBackingBean.filtredTrailerList}"
+							 rows="25" rowsPerPageTemplate="10,25,50,100" paginator="true" paginatorAlwaysVisible="true" paginatorTemplate="{CurrentPageReport} {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}" currentPageReportTemplate="Прицепов всего {totalRecords}. Страница {currentPage} из {totalPages}" emptyMessage="Нет записей">
+
+					<p:ajax event="rowSelect" update=":form_edit_trailers:toolbar_trailers" />
+					<p:ajax event="rowUnselect" update=":form_edit_trailers:toolbar_trailers" />
+					<p:ajax event="rowDblselect" oncomplete="PF('dlg_edit_trailer').show();" update=":form_trailer_edit" disabled="#{!canEditTrailers}"/>
+
+					<f:facet name="header">
+						<p:outputPanel style="text-align: right">
+							<h:outputText value="Поиск по прицепам: "/>
+							<p:inputText id="globalFilter" onkeyup="PF('tableTrailers').filter()" style="width:150px;horiz-align: right"/>
+						</p:outputPanel>
+					</f:facet>
+
+					<p:column style="width:20px; text-align: center;" priority="1" rendered="#{canEditTrailers}">
+						<f:facet name="header">
+							<i class="fa fa-edit" />
+						</f:facet>
+						<p:commandButton icon="fa fa-edit" oncomplete="PF('dlg_edit_trailer').show();" update=":form_trailer_edit" actionListener="#{trailerController.selectTrailer(trailer)}"/>
+					</p:column>
+
+					<p:column headerText="#{msgs['trailers.title']}" style="white-space:nowrap;" priority="2" filterBy="#{trailer.title}" filterMatchMode="contains" filterStyle="display:none">
+						<h:outputText value="#{trailer.title}" />
+					</p:column>
+
+					<p:column headerText="#{msgs['trailers.brand']}" style="white-space:nowrap;" priority="2">
+						<h:outputText value="#{trailer.brand}" />
+					</p:column>
+
+					<p:column headerText="#{msgs['trailers.model']}" style="white-space:nowrap;" priority="2">
+						<h:outputText value="#{trailer.model}" />
+					</p:column>
+
+					<p:column headerText="#{msgs['trailers.govNumber']}" style="white-space:nowrap;" priority="1" filterBy="#{trailer.govNumber}" filterMatchMode="contains" filterStyle="display:none">
+						<h:outputText value="#{trailer.govNumber}" />
+					</p:column>
+
+					<p:column headerText="#{msgs['trailers.calibration']}" style="white-space:nowrap;" priority="2">
+						<h:outputText value="#{trailer.calibration}">
+							<f:convertNumber groupingUsed="true" minFractionDigits="0" />
+						</h:outputText>
+					</p:column>
+
+					<p:column headerText="#{msgs['trailers.capacity']}" style="white-space:nowrap;" priority="1">
+						<h:outputText value="#{trailer.capacity}">
+							<f:convertNumber groupingUsed="true" minFractionDigits="0" />
+						</h:outputText>
+					</p:column>
+
+					<p:column headerText="#{msgs['trailers.bottomLoading']}" style="white-space:nowrap;" priority="1">
+						<p:outputPanel style="text-align: center;" rendered="#{trailer.bottomLoading}">
+							<i class="fa fa-check-square-o" />
+						</p:outputPanel>
+					</p:column>
+
+					<p:column headerText="#{msgs['trailers.bottomLoadingCalibration']}" style="white-space:nowrap;" priority="2">
+						<h:outputText value="#{trailer.bottomLoadingCalibration}">
+							<f:convertNumber groupingUsed="true" minFractionDigits="0" />
+						</h:outputText>
+					</p:column>
+
+					<p:column headerText="#{msgs['trailers.description']}" style="white-space:nowrap;" priority="3" filterBy="#{trailer.description}" filterMatchMode="contains" filterStyle="display:none">
+						<h:outputText value="#{trailer.description}"/>
+					</p:column>
+				</p:dataTable>
+			</h:form>
+		</p:outputPanel>
+
+		<p:outputPanel rendered="#{!loginController.hasAccessTo(enumBean.modelTrailer, enumBean.accessView)}">
+			<ui:include src="disallowpage.xhtml" />
+		</p:outputPanel>
+		</ui:define>
+	</ui:composition>
+</h:body>
+</html>

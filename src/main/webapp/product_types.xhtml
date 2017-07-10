@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" 
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:h="http://java.sun.com/jsf/html" xmlns:f="http://java.sun.com/jsf/core" xmlns:ui="http://java.sun.com/jsf/facelets" xmlns:p="http://primefaces.org/ui">
+<h:body>
+	<ui:composition template="/layout/forcab.xhtml">
+		<ui:define name="windowTitle">#{msgs['productType.title']}</ui:define>
+		<ui:define name="content">
+
+			<p:outputPanel rendered="#{loginController.hasAccessTo(enumBean.modelProductType, enumBean.accessView) or loginController.hasAccessTo(enumBean.modelProductType, enumBean.accessEdit)}">
+
+				<ui:param name="edit_readOnly" value="#{!loginController.hasAccessTo(enumBean.modelProductType, enumBean.accessEdit)}" />
+
+				<p:dialog id="dialog_delete_goodKind" header="Удаление вида товара / услуги" widgetVar="dlg_delete_goodKind" resizable="false" modal="true" draggable="false" showEffect="fade" hideEffect="explode" rendered="#{loginController.hasAccessTo(enumBean.modelProductType, enumBean.accessDelete)}">
+					<h:form id="form_goodKind_delete">
+						<h:panelGrid columns="1" cellpadding="5" style="width: 100%;">
+							<h:outputLabel value="Вы действительно хотите удалить данный вид товара ?" />
+							<h:outputLabel style="font-weight: bold;" value="Вид товара: #{productBackingBean.popupDialogSelectedProductType.nameWork} идент.: #{productBackingBean.popupDialogSelectedProductType.id}" />
+							<h:panelGrid columns="2" cellpadding="5" style="margin: 0 auto;">
+								<p:commandButton icon="fa fa-times-circle fa-fw fa-fvm" value="Удалить" update=":form_product_type_choice:table_product_types" actionListener="#{productController.buttonActionRemoveProductType}" oncomplete="PF('dlg_delete_goodKind').hide();" />
+								<p:commandButton value="Отмена" onclick="PF('dlg_delete_goodKind').hide();" />
+							</h:panelGrid>
+						</h:panelGrid>
+					</h:form>
+				</p:dialog>
+
+					<h:form id="form_product_type_choice">
+						<p:menubar id="menubar_product_types" rendered="#{loginController.hasAccessTo(enumBean.modelProductType, enumBean.accessView) or loginController.hasAccessTo(enumBean.modelProductType, enumBean.accessEdit)}">
+							<p:menuitem value="Добавить" disabled="#{edit_readOnly}" icon="fa fa-plus-circle fa-fw fa-fvm" actionListener="#{productController.buttonActionNewProductType}" update="table_product_types"/>
+							<p:menuitem value="Удалить" icon="fa fa-times-circle fa-fw fa-fvm" onclick="PF('dlg_delete_goodKind').show();" update="form_goodKind_delete" disabled="#{productBackingBean.popupDialogSelectedProductType==null or edit_readOnly}"/>
+							<f:facet name="options">
+								<p:inputText id="searchContractorFieldStr" value="#{productBackingBean.popupDialogSearchStringContractorByNameWork}" placeholder="Поиск по Наименование рабочее" style="margin-right:10px">
+									<p:ajax event="keyup" update="table_product_types" listener="#{productController.refreshProductTypesTableInPopupDialog}" />
+								</p:inputText>
+								<p:commandButton type="button" icon="fa fa-close fa-fw">
+									<p:ajax event="click" listener="#{productController.resetProductTypesTableInPopupDialog}" update="form_product_type_choice" />
+								</p:commandButton>
+							</f:facet>
+						</p:menubar>
+						<div style="height: 5px;" />
+						
+						<p:dataTable id="table_product_types" var="goodKind" value="#{productController.getProductTypes()}" selectionMode="single" selection="#{productBackingBean.popupDialogSelectedProductType}" editable="#{loginController.hasAccessTo(enumBean.modelProductType, enumBean.accessView) or loginController.hasAccessTo(enumBean.modelProductType, enumBean.accessEdit)}" editMode="row" rowKey="#{goodKind.id}" rows="20" paginator="true"
+									 paginatorTemplate="{CurrentPageReport} {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink}" currentPageReportTemplate="Вид товаров всего {totalRecords}. Страница {currentPage} из {totalPages}" emptyMessage="Не найдено">
+
+							<p:ajax event="rowSelect" update=":form_product_type_choice:menubar_product_types" />
+							<p:ajax event="rowUnselect" update=":form_product_type_choice:menubar_product_types" />
+							<p:ajax event="rowEdit" listener="#{productController.onRowEditProductType}" update="table_product_types" />
+							<p:ajax event="rowEditCancel" listener="#{productController.onRowCancelProductType}" update="table_product_types" />
+
+							<p:column style="width:20px; text-align: center;" priority="1">
+								<f:facet name="header">
+									<i class="fa fa-check" />
+								</f:facet>
+								<p:commandButton icon="fa fa-check" actionListener="#{productController.setSelectedProductType(goodKind)}" update=":form_product_type_choice:table_product_types"/>
+							</p:column>
+
+							<p:column headerText="#{msgs['productType.nameWork']}" >
+								<p:cellEditor>
+									<f:facet name="output">
+										<h:outputText value="#{goodKind.nameWork}" />
+									</f:facet>
+									<f:facet name="input">
+										<p:inputText value="#{goodKind.nameWork}" style="width:98%"/>
+									</f:facet>
+								</p:cellEditor>
+							</p:column>
+							<p:column headerText="#{msgs['productType.nameFull']}" >
+								<p:cellEditor>
+									<f:facet name="output">
+										<h:outputText value="#{goodKind.nameFull}" />
+									</f:facet>
+									<f:facet name="input">
+										<p:inputText value="#{goodKind.nameFull}" style="width:98%"/>
+									</f:facet>
+								</p:cellEditor>
+							</p:column>
+							<p:column headerText="#{msgs['productType.density']}">
+								<p:cellEditor>
+									<f:facet name="output">
+										<h:outputText value="#{goodKind.density}">
+											<f:convertNumber minFractionDigits="3" groupingUsed="true" />
+										</h:outputText>
+									</f:facet>
+									<f:facet name="input">
+										<p:inputText value="#{goodKind.density}" style="width:98%">
+											<f:convertNumber minFractionDigits="3" groupingUsed="true" />
+										</p:inputText>
+									</f:facet>
+								</p:cellEditor>
+							</p:column>
+
+							<p:column headerText="#{msgs['productType.description']}">
+								<p:cellEditor>
+									<f:facet name="output">
+										<h:outputText value="#{goodKind.description}" />
+									</f:facet>
+									<f:facet name="input">
+										<p:inputText value="#{goodKind.description}" style="width:98%"/>
+									</f:facet>
+								</p:cellEditor>
+							</p:column>
+							<p:column style="width:30px; text-align: center; float:center" rendered="#{loginController.hasAccessTo(enumBean.modelProductType, enumBean.accessView) or loginController.hasAccessTo(enumBean.modelProductType, enumBean.accessEdit)}">
+								<f:facet name="header">
+									<i class="fa fa-edit" />
+								</f:facet>
+
+								<p:rowEditor style="text-align: center; float:center" />
+							</p:column>
+						</p:dataTable>
+					</h:form>
+			</p:outputPanel>
+
+			<p:outputPanel rendered="#{!loginController.hasAccessTo(enumBean.modelProductType, enumBean.accessView)}">
+				<ui:include src="disallowpage.xhtml" />
+			</p:outputPanel>
+		</ui:define>
+	</ui:composition>
+</h:body>
+</html>

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" 
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<div xmlns="http://www.w3.org/1999/xhtml" xmlns:h="http://java.sun.com/jsf/html" xmlns:f="http://java.sun.com/jsf/core" xmlns:ui="http://java.sun.com/jsf/facelets" xmlns:p="http://primefaces.org/ui">
+	<ui:param name="user_editor" value="#{cpom.isUserEditor()}" />
+	<ui:param name="user_su" value="#{cpom.isUserSU()}" />
+	<ui:param name="edit_readOnly" value="false" />
+
+	<table style="margin-left: auto; margin-right: auto; margin-top: auto; margin-bottom: auto; height: 300px">
+		<tr>
+			<td align="center" valign="middle"><i class="fa fa-lock fa-5x " /></td>
+			<td align="center" valign="middle"><h3>У Вас нет доступа к данному разделу !</h3></td>
+		</tr>
+	</table>
+
+
+</div>

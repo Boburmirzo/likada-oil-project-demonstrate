@@ -1,0 +1,258 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" 
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:h="http://java.sun.com/jsf/html" xmlns:f="http://java.sun.com/jsf/core"
+	  xmlns:ui="http://java.sun.com/jsf/facelets" xmlns:p="http://primefaces.org/ui"
+	  xmlns:c="http://java.sun.com/jsp/jstl/core">
+<h:body>
+	<ui:composition template="/layout/forcab.xhtml">
+		<ui:define name="windowTitle">#{msgs['vehicleStatuses']}</ui:define>
+		<ui:define name="content">
+
+		<ui:param name="canEditVehicleStatusess" value="#{loginController.hasAccessTo(enumBean.modelVehicleStatus, enumBean.accessEdit)}" />
+		<p:outputPanel rendered="#{loginController.hasAccessTo(enumBean.modelVehicleStatus, enumBean.accessView) or loginController.hasAccessTo(enumBean.modelVehicleStatus, enumBean.accessEdit)}">
+
+			<p:dialog  style="width:600px; max-width: 600px; max-height: 500px; overflow: auto;" header="Обновление статуса" widgetVar="dlg_new_logistician_status" resizable="false" modal="true" draggable="false">
+				<h:form id="form_new_logistician_status">
+
+					<div class="ui-fluid" style="max-width: 500px;">
+						<div class="ui-grid ui-grid-responsive">
+							<div class="ui-grid-row resp_grid_row_std">
+								<div class="ui-grid-col-1 resp_ui-grid-col-1">
+									<p:outputLabel value="#{msgs['vehicleStatuses.vehicle']}: " />
+								</div>
+
+								<div class="ui-grid-col-10">
+									<p:outputLabel styleClass="field_readonly" value="#{vehicleStatusBackingBean.selectedStatus.vehicle.truck.title} [#{vehicleStatusBackingBean.selectedStatus.vehicle.truck.govNumber}]" />
+								</div>
+							</div>
+
+							<div class="ui-grid-row resp_grid_row_std">
+								<div class="ui-grid-col-1 resp_ui-grid-col-1">
+									<p:outputLabel value="Изменение статуса на:" />
+								</div>
+								<div class="ui-grid-col-10">
+									<p:inputText id="field_status_title" value="#{vehicleStatusBackingBean.selectedStatus.logisticianStatus.title}" />
+								</div>
+							</div>
+
+
+							<div class="ui-grid-row resp_grid_row_std">
+								<div class="ui-grid-col-1 resp_ui-grid-col-1">
+									<p:outputLabel value="Примечание:" />
+								</div>
+								<div class="ui-grid-col-10">
+									<p:inputTextarea rows="2" value="#{vehicleStatusBackingBean.selectedStatus.logisticianStatus.description}" />
+								</div>
+							</div>
+
+							<div class="ui-grid-row resp_grid_row_std">
+								<div class="ui-grid-col-1 resp_ui-grid-col-1">
+									<p:outputLabel value="Дата и время состояния:" />
+								</div>
+								<div class="ui-grid-col-3">
+									<p:calendar value="#{vehicleStatusBackingBean.selectedStatus.logisticianStatus.statusDate}" pattern="dd.MM.yyyy HH:mm" locale="ru" />
+								</div>
+							</div>
+
+						</div>
+					</div>
+
+					<h:panelGrid columns="2" cellpadding="5" style="margin: 0 auto;">
+						<p:commandButton id="buttonOk" icon="fa fa-check fa-fw fa-fvm" value="Обновить" actionListener="#{vehicleStatusController.buttonSaveVehicleStatusLogistician}" oncomplete="PF('dlg_new_logistician_status').hide();" update="form_edit_vssts" />
+						<p:commandButton value="Отмена" update="form_edit_vssts" onclick="PF('dlg_new_logistician_status').hide();" />
+					</h:panelGrid>
+					<p:defaultCommand target="buttonOk" />
+				</h:form>
+			</p:dialog>
+
+			<p:dialog responsive="true" style="width:600px; max-width: 600px; max-height: 500px; overflow: auto;" header="Обновление состаяние" widgetVar="dlg_new_mechanical_status" resizable="false" modal="true" draggable="false">
+				<h:form id="form_new_mechanical_status">
+
+					<div class="ui-fluid" style="max-width: 500px;">
+						<div class="ui-grid ui-grid-responsive">
+							<div class="ui-grid-row resp_grid_row_std">
+								<div class="ui-grid-col-1 resp_ui-grid-col-1">
+									<p:outputLabel value="#{msgs['vehicleStatuses.vehicle']}: " />
+								</div>
+
+								<div class="ui-grid-col-10">
+									<p:outputLabel styleClass="field_readonly" value="#{vehicleStatusBackingBean.selectedStatus.vehicle.truck.title} [#{vehicleStatusBackingBean.selectedStatus.vehicle.truck.govNumber}]" />
+								</div>
+							</div>
+
+							<div class="ui-grid-row resp_grid_row_std">
+								<div class="ui-grid-col-1 resp_ui-grid-col-1">
+									<p:outputLabel value="Изменение статуса на:" />
+								</div>
+								<div class="ui-grid-col-10">
+									<p:selectManyCheckbox id="grid" value="#{vehicleStatusBackingBean.selectedMechanicalStatusTypes}" layout="grid" columns="1">
+										<f:selectItems  var="statusType" value="#{vehicleStatusBackingBean.mechanicalStatusTypeList}"/>
+									</p:selectManyCheckbox>
+								</div>
+							</div>
+
+
+							<div class="ui-grid-row resp_grid_row_std">
+								<div class="ui-grid-col-1 resp_ui-grid-col-1">
+									<p:outputLabel value="Примечание:" />
+								</div>
+								<div class="ui-grid-col-10">
+									<p:inputTextarea rows="2" value="#{vehicleStatusBackingBean.selectedStatus.mechanicalStatus.description}" />
+								</div>
+							</div>
+
+							<div class="ui-grid-row resp_grid_row_std">
+								<div class="ui-grid-col-1 resp_ui-grid-col-1">
+									<p:outputLabel value="Дата и время состояния:" />
+								</div>
+								<div class="ui-grid-col-3">
+									<p:calendar value="#{vehicleStatusBackingBean.selectedStatus.mechanicalStatus.statusDate}" pattern="dd.MM.yyyy HH:mm" locale="ru" />
+								</div>
+							</div>
+
+						</div>
+					</div>
+
+
+
+					<h:panelGrid columns="2" cellpadding="5" style="margin: 0 auto;">
+						<p:commandButton icon="fa fa-check fa-fw fa-fvm" value="Обновить" actionListener="#{vehicleStatusController.buttonSaveVehicleStatusMechanical}" oncomplete="PF('dlg_new_mechanical_status').hide();" update="form_edit_vssts" />
+						<p:commandButton value="Отмена" update="form_edit_vssts" onclick="PF('dlg_new_mechanical_status').hide();" />
+					</h:panelGrid>
+
+				</h:form>
+			</p:dialog>
+
+			<h:form id="form_edit_vssts">
+				<p:poll interval="10" update="table_vssts" />
+				<div style="height: 5px;" />
+				<div class="page_title">#{msgs['vehicleStatuses']}</div>
+				<div style="height: 5px;" />
+				<p:menubar id="toolbar_vssts" rendered="#{vehicleStatusController.currentUserLogistician}">
+					<c:choose>
+					<c:when test="#{vehicleStatusBackingBean.showOnlyVehiclesWhereLogistianIsYou == false}">
+						<p:menuitem value="Только мои машины" icon="fa fa-eye-slash" update="form_edit_vssts" actionListener="#{vehicleStatusController.switchModeOnlyMyVehicles}" rendered="#{vehicleStatusController.currentUserLogistician}"/>
+					</c:when>
+					<c:when test="#{vehicleStatusBackingBean.showOnlyVehiclesWhereLogistianIsYou == true}">
+						<p:menuitem value="Все машины" icon="fa fa-eye" update="form_edit_vssts" actionListener="#{vehicleStatusController.switchModeOnlyMyVehicles}" rendered="#{vehicleStatusController.currentUserLogistician}"/>
+					</c:when>
+					</c:choose>
+				</p:menubar>
+
+				<p:dataTable id="table_vssts" rowExpandMode="single" widgetVar="vsstsTable" style="width:100%;" var="vehicle" value="#{vehicleStatusController.vehicles}" rowKey="#{vehicle}" sortBy="#{vehicle.logistician.title}" filteredValue="#{vehicleStatusBackingBean.filteredVehicleList}"
+							 rows="25" rowsPerPageTemplate="10,25,50,100" paginator="true" paginatorAlwaysVisible="true" paginatorTemplate="{CurrentPageReport} {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}" currentPageReportTemplate="Статусов всего {totalRecords}. Страница {currentPage} из {totalPages}" emptyMessage="Нет записей">
+
+					<p:column style="text-align: center; width:20px;" headerText="Обновить статус" priority="1" rendered="#{canEditVehicleStatusess}">
+						<f:facet name="header">
+							<i class="fa fa-rocket" />
+						</f:facet>
+						<p:commandButton icon="fa fa-rocket" actionListener="#{vehicleStatusController.buttonCreateNewLogisticianStatus(vehicle)}" update="form_new_logistician_status" onclick="PF('dlg_new_logistician_status').show();" />
+					</p:column>
+
+					<p:column style="text-align: center; width:20px;" headerText="Обновить состояние" priority="1" rendered="#{canEditVehicleStatusess}">
+						<f:facet name="header">
+							<i class="fa fa-cog" />
+						</f:facet>
+						<p:commandButton icon="fa fa-cog" actionListener="#{vehicleStatusController.buttonCreateNewMechanicalStatus(vehicle)}" update="form_new_mechanical_status" onclick="PF('dlg_new_mechanical_status').show();" />
+					</p:column>
+
+					<p:column style="width:50px;" headerText="#{msgs['vehicleStatuses.vehicle']}" priority="1">
+						<h:outputText value="#{vehicle.truck.title}" />
+					</p:column>
+
+					<p:column headerText="#{msgs['vehicleStatuses.status']}" style="white-space:nowrap;" priority="1">
+						<p:panelGrid styleClass="ui-noborder" cellpadding="0" cellspacing="0">
+						<p:row>
+						<p:column>
+							<h:outputText style="text-align: left; float:left;" value="#{vehicle.status.logisticianStatus.title} " />
+						</p:column>
+						<p:column>
+							<h:outputText style="text-align: left; float:right;" value="#{vehicle.status.logisticianStatus.statusDate}">
+								<f:convertDateTime type="both" dateStyle="medium" timeStyle="short" />
+							</h:outputText>
+						</p:column>
+						</p:row>
+						<p:row>
+						<p:column>
+							<h:outputText style="text-align: left; float:left; font-size: xx-small;" value="#{vehicle.status.logisticianStatus.description}"/>
+						</p:column>
+						</p:row>
+						</p:panelGrid>
+					</p:column>
+
+					<p:column style="text-align: center; width:20px;">
+						<f:facet name="header">
+							<i class="fa fa-list-alt" />
+						</f:facet>
+						<p:rowToggler id="toggler_vehicleStatusHistory"/>
+					</p:column>
+
+					<p:rowExpansion id="row_expension_vehicleStatusHistory">
+
+							<p:dataTable id="table_vehicleStatus" var="vehicleStatus" value="#{vehicle.getVehicleStatusesList()}" selectionMode="single" rowKey="#{vehicleStatus}" emptyMessage="Не найдено">
+
+								<p:column headerText="#{msgs['vehicleStatuses.statusDate']}"  >
+									<h:outputText  value="#{vehicleStatus.created}">
+										<f:convertDateTime type="both" dateStyle="medium" timeStyle="short" />
+									</h:outputText>
+								</p:column>
+
+								<p:column style="text-align: center; width:20px;">
+									<f:facet name="header">
+										<i class="fa fa-wrench" />
+									</f:facet>
+									<h:outputText styleClass="fa fa-rocket" rendered="#{vehicleStatus.typeOfStatus==0}"/>
+									<h:outputText styleClass="fa fa-cog" rendered="#{vehicleStatus.typeOfStatus==1}"/>
+								</p:column>
+
+								<p:column headerText="#{msgs['vehicleStatuses.status']}">
+									<h:outputText  value="#{vehicleStatus.title} " />
+								</p:column>
+
+								<p:column headerText="#{msgs['drive.description']}" >
+									<h:outputText  value="#{vehicleStatus.description}"/>
+								</p:column>
+
+								<p:column headerText="#{msgs['vehicleStatuses.creator']}" >
+									<h:outputText  value="#{vehicleStatus.creator.title}"/>
+								</p:column>
+
+							</p:dataTable>
+					</p:rowExpansion>
+
+					<p:column headerText="#{msgs['vehicleStatuses.state']}" style="white-space:nowrap;" priority="1">
+						<p:panelGrid styleClass="ui-noborder"  cellpadding="0" cellspacing="0" >
+						<p:row>
+							<p:column>
+								<h:outputText style="text-align: left; float:left;" value="#{vehicle.status.mechanicalStatus.mehahicalStatusTitle} " />
+							</p:column>
+							<p:column>
+								<h:outputText style="text-align: left; float:right;" value="#{vehicle.status.mechanicalStatus.statusDate}">
+									<f:convertDateTime type="both" dateStyle="medium" timeStyle="short" />
+								</h:outputText>
+							</p:column>
+						</p:row>
+						<p:row>
+							<p:column>
+								<h:outputText style="text-align: left; float:left; font-size: xx-small;" value="#{vehicle.status.mechanicalStatus.description}" />
+							</p:column>
+						</p:row>
+						</p:panelGrid>
+					</p:column>
+
+					<p:column headerText="#{msgs['vehicles.logistician']}" style="white-space:nowrap;" priority="2">
+						<h:outputText value="#{vehicle.logistician.title}" />
+					</p:column>
+
+				</p:dataTable>
+			</h:form>
+		</p:outputPanel>
+
+		<p:outputPanel rendered="#{!loginController.hasAccessTo(enumBean.modelVehicleStatus, enumBean.accessView)}">
+			<ui:include src="disallowpage.xhtml" />
+		</p:outputPanel>
+		</ui:define>
+	</ui:composition>
+</h:body>
+</html>

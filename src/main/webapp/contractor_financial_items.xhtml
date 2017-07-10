@@ -1,0 +1,961 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:h="http://java.sun.com/jsf/html" xmlns:f="http://java.sun.com/jsf/core" xmlns:ui="http://java.sun.com/jsf/facelets" xmlns:p="http://primefaces.org/ui">
+<h:body>
+    <ui:composition template="/layout/forcab.xhtml">
+        <ui:define name="windowTitle">#{msgs['financialItem.title']}</ui:define>
+        <ui:define name="content">
+
+            <style type="text/css">
+                .Active
+                {
+                    background-color: #FCDED2 !important;
+                    background-image: none !important;
+                    color: #000000 !important;
+                }
+            </style>
+
+            <h:outputScript library="primefaces" name="jquery/jquery.js" />
+
+            <p:outputPanel rendered="#{loginController.hasAccessTo(enumBean.modelFinancialItem, enumBean.accessView) or loginController.hasAccessTo(enumBean.modelFinancialItem, enumBean.accessEdit)}">
+
+                <ui:param name="edit_readOnly" value="#{!loginController.hasAccessTo(enumBean.modelFinancialItem, enumBean.accessEdit)}" />
+
+                <p:dialog id="dialog_inactive_financialItem" header="Не активировать проводку" widgetVar="dlg_inactive_financialItem" resizable="false" modal="true" draggable="false" showEffect="fade" hideEffect="explode" rendered="#{!edit_readOnly}" >
+                    <h:form id="form_inactive_financialItem">
+                        <h:panelGrid columns="1" cellpadding="5" style="width: 100%;">
+                            <h:outputLabel value="Вы действительно хотите сделать не активной данную проводку ?" />
+                            <h:outputLabel style="font-weight: bold;" value="Вид проводки: #{financialItemBackingBean.selectedFinancialItemInTable.description} От кого:
+                            #{financialItemBackingBean.selectedFinancialItemInTable.contractorFrom!=null ? financialItemBackingBean.selectedFinancialItemInTable.contractorFrom.nameShort : ''}
+                            Кому: #{financialItemBackingBean.selectedFinancialItemInTable.contractorTo!=null ? financialItemBackingBean.selectedFinancialItemInTable.contractorTo.nameShort : ''}" />
+                            <h:panelGrid columns="2" cellpadding="5" style="margin: 0 auto;">
+                                <p:commandButton icon="fa fa-times-circle fa-fw fa-fvm" value="Сделать не активной"
+                                                 update=":form_shipment_base_choice:table_shipment_bases :form_shipment_base_choice:table_shipment_bases:creditField :form_shipment_base_choice:table_shipment_bases:debitField :form_shipment_base_choice:table_shipment_bases:totalField :form_shipment_base_choice:table_shipment_bases:totalFieldBalance :form_shipment_base_choice:table_shipment_bases:debitBalance :form_shipment_base_choice:table_shipment_bases:creditBalance"
+                                                 actionListener="#{financialItemController.makeFinancialItemNotActive}" oncomplete="PF('dlg_inactive_financialItem').hide();" />
+                                <p:commandButton value="Отмена" onclick="PF('dlg_inactive_financialItem').hide();" />
+                            </h:panelGrid>
+                        </h:panelGrid>
+                    </h:form>
+                </p:dialog>
+
+                <p:dialog id="dialog_active_financialItem" header="Активировать финансовую проводку" widgetVar="dlg_active_financialItem" resizable="false" modal="true" draggable="false" showEffect="fade" hideEffect="explode" rendered="#{!edit_readOnly}" >
+                    <h:form id="form_active_financialItem">
+                        <h:panelGrid columns="1" cellpadding="5" style="width: 100%;">
+                            <h:outputLabel value="Вы действительно хотите сделать активной данную проводку ?" />
+                            <h:outputLabel style="font-weight: bold;" value="Вид проводки: #{financialItemBackingBean.selectedFinancialItemInTable.description} От кого:
+                            #{financialItemBackingBean.selectedFinancialItemInTable.contractorFrom!=null ? financialItemBackingBean.selectedFinancialItemInTable.contractorFrom.nameShort : ''}
+                            Кому: #{financialItemBackingBean.selectedFinancialItemInTable.contractorTo!=null ? financialItemBackingBean.selectedFinancialItemInTable.contractorTo.nameShort : ''}" />
+                            <h:panelGrid columns="2" cellpadding="5" style="margin: 0 auto;">
+                                <p:commandButton icon="fa fa-check fa-fw fa-fvm" value="Сделать активной" update=":form_shipment_base_choice:table_shipment_bases :form_shipment_base_choice:table_shipment_bases:creditField :form_shipment_base_choice:table_shipment_bases:debitField :form_shipment_base_choice:table_shipment_bases:totalField :form_shipment_base_choice:table_shipment_bases:totalFieldBalance :form_shipment_base_choice:table_shipment_bases:debitBalance :form_shipment_base_choice:table_shipment_bases:creditBalance" actionListener="#{financialItemController.makeFinancialItemActive}" oncomplete="PF('dlg_active_financialItem').hide();" />
+                                <p:commandButton value="Отмена" onclick="PF('dlg_active_financialItem').hide();" />
+                            </h:panelGrid>
+                        </h:panelGrid>
+                    </h:form>
+                </p:dialog>
+
+                <p:dialog id="dialog_delete_shipmentBase" header="Удаление финансовую проводку" widgetVar="dlg_delete_shipment_base" resizable="false" modal="true" draggable="false" showEffect="fade" hideEffect="explode" rendered="#{!edit_readOnly}" >
+                    <h:form id="form_shipment_delete">
+                        <h:panelGrid columns="1" cellpadding="5" style="width: 100%;">
+                            <h:outputLabel value="Вы действительно хотите удалить данную проводку ?" />
+                            <h:outputLabel style="font-weight: bold;" value="Вид проводки: #{financialItemBackingBean.selectedFinancialItemInTable.description} идент.: #{financialItemBackingBean.selectedFinancialItemInTable.id}" />
+                            <h:panelGrid columns="2" cellpadding="5" style="margin: 0 auto;">
+                                <p:commandButton icon="fa fa-times-circle fa-fw fa-fvm" value="Удалить" update=":form_shipment_base_choice:table_shipment_bases" actionListener="#{financialItemController.buttonActionRemove}" oncomplete="PF('dlg_delete_shipment_base').hide();" />
+                                <p:commandButton value="Отмена" onclick="PF('dlg_delete_shipment_base').hide();" />
+                            </h:panelGrid>
+                        </h:panelGrid>
+                    </h:form>
+                </p:dialog>
+
+                <p:dialog style="width:50%; max-width: 95%; max-height: 95%; overflow: auto;" id="dialog_contractor_choice" widgetVar="dlg_contractor_choice" resizable="false" modal="true" draggable="false" rendered="#{!edit_readOnly}">
+                    <h:form id="form_edit_contractors">
+                        <div class="page_title">#{msgs['contractors.title']}</div>
+                        <div class="ui-fluid" style="width: 100%;">
+                            <div class="ui-grid ui-grid-responsive">
+                                <div class="ui-grid-row">
+                                    <div class="ui-grid-col-3">
+                                        <!--<div style="height: 5px;" />-->
+
+                                        <div id="lo_goods_groups">
+                                            <p:tree id="goods_groups" style="width: 99.5%;" value="#{financialItemController.getContractorGroupsRoot()}" var="node" dynamic="true" selectionMode="single" selection="#{financialItemBackingBean.selectedGroupNode}">
+                                                <p:ajax event="select" listener="#{financialItemController.changeContractorsOfSelectedGroup}" update=":form_edit_contractors:table_contractors form_edit_contractors:goods_groups_list :form_edit_contractors" />
+                                                <p:treeNode expandedIcon="ui-icon-folder-open" collapsedIcon="ui-icon-folder-collapsed">
+                                                    <p:outputLabel id="node_group" ondblclick="PF('dlg_edit_group').show();" value="#{node}" />
+                                                </p:treeNode>
+                                            </p:tree>
+                                        </div>
+                                        <div id="lo_goods_groups_list">
+
+                                            <p:outputPanel id="panel_goods_groups_list">
+                                                <p:selectOneMenu id="goods_groups_list"  converter="contractorGroupConverter" value="#{financialItemBackingBean.selectedGroupNode}">
+                                                    <p:ajax event="change" listener="#{financialItemController.changeContractorsOfSelectedGroup}" update=":form_edit_contractors:table_contractors form_edit_contractors:goods_groups :form_edit_contractors" />
+                                                    <f:selectItems value="#{financialItemController.getNodeList()}" var="gtn" itemValue="#{gtn}" itemLabel="#{gtn.data}" />
+                                                </p:selectOneMenu>
+                                            </p:outputPanel>
+
+                                            <p:sticky target="panel_goods_groups_list" margin="5" />
+                                        </div>
+                                    </div>
+
+                                    <div class="ui-grid-col-1 ui-grid-col-5px">
+                                        <div style="height: 5px;" />
+                                    </div>
+                                    <div class="ui-grid-col-10">
+                                        <p:menubar  id="menubar_contractors">
+                                            <f:facet name="options">
+                                                <ui:param name="pd" value="#{financialItemController.showCustomerFieldForAllAndCustomerGroup()}" />
+                                                <p:outputPanel rendered="#{pd==0}">
+                                                    <p:inputText id="searchContractorFieldStr" value="#{financialItemBackingBean.selectedContractorFromSearchStringForFinancialItemView}" placeholder="Поиск по названию ИНН ОГРН" style="margin-right:10px">
+                                                        <p:ajax event="keyup" update="table_contractors" listener="#{financialItemController.refreshContractorsTableInFinancialItemView(financialItemBackingBean.selectedGroupNodeDataInString)}" />
+                                                    </p:inputText>
+                                                </p:outputPanel>
+                                                <p:outputPanel rendered="#{pd==1}">
+                                                    <p:inputText id="searchContractorFieldStrShowCustomerFrom" value="#{financialItemBackingBean.selectedContractorFromSearchStringForFinancialItemView}" placeholder="Поиск по названию ИНН ОГРН" style="margin-right:10px">
+                                                        <p:ajax event="keyup" update="table_contractorsCustomerShow" listener="#{financialItemController.refreshContractorsTableInFinancialItemView(financialItemBackingBean.selectedGroupNodeDataInString)}" />
+                                                    </p:inputText>
+                                                </p:outputPanel>
+                                                <!--<p:commandButton type="button" icon="fa fa-close fa-fw">-->
+                                                <!--<p:ajax event="click" listener="#{contractorController.resetContractorsTableData(financialItemBackingBean.selectedGroupNodeDataInString)}" update="form_edit_contractors" />-->
+                                                <!--</p:commandButton>-->
+                                            </f:facet>
+                                        </p:menubar>
+
+                                        <div style="height: 5px;" />
+                                        <ui:param name="pd" value="#{financialItemController.showCustomerFieldForAllAndCustomerGroup()}" />
+                                        <p:outputPanel rendered="#{pd==0}">
+                                            <p:dataTable id="table_contractors"  var="contractorFrom" value="#{financialItemController.getContractorsInFinancialItemView(financialItemBackingBean.selectedGroupNodeDataInString)}" selectionMode="single" selection="#{financialItemBackingBean.selectedContractorFromForFinancialItemView}" rowKey="#{contractorFrom.id}" rows="25" rowsPerPageTemplate="10,25,50,100" paginator="true"
+                                                         paginatorAlwaysVisible="true" paginatorTemplate="{CurrentPageReport} {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}" currentPageReportTemplate="Контрагентов всего {totalRecords}. Страница {currentPage} из {totalPages}"
+                                                         emptyMessage="Не найдено">
+
+                                                <p:ajax event="rowSelect" update=":form_edit_contractors:buttonChoice" />
+                                                <p:ajax event="rowUnselect" update=":form_edit_contractors:buttonChoice" />
+                                                <p:ajax event="rowDblselect" listener="#{financialItemController.doubleClickSelectedRowInContractorFromChooseForTableInCustomerView}" update=":form_shipment_base_choice:table_shipment_bases:contractor_from_id :form_shipment_base_choice:table_shipment_bases" onsuccess="PF('dlg_contractor_choice').hide();"/>
+                                                <!--<p:columnToggler datasource="table_contractors" trigger="goods_groups_list">-->
+                                                <!--<p:ajax event="toggle" listener="#{financialItemController.onColumnToggle}" />-->
+                                                <!--</p:columnToggler>-->
+                                                <p:column style="width:20px; text-align: center;" priority="1">
+                                                    <f:facet name="header">
+                                                        <i class="fa fa-check" />
+                                                    </f:facet>
+                                                    <p:commandButton icon="fa fa-check" actionListener="#{financialItemController.setContractorFromForSelectedFinancialItem(contractorFrom)}" update=":form_shipment_base_choice:table_shipment_bases:contractor_from_id :form_shipment_base_choice:table_shipment_bases" onsuccess="PF('dlg_contractor_choice').hide();"/>
+                                                </p:column>
+                                                <!--<p:columnToggler datasource="table_contractors" trigger="goods_groups_list" />-->
+                                                <!--<ui:param name="pd" value="#{financialItemController.getCloseCustomerColumnParameter()}" />-->
+                                                <!--<p:outputPanel rendered="#{pd==1}">-->
+                                                <!--<p:column  headerText="#{msgs['customer']}"  style="white-space:nowrap;" priority="1">-->
+                                                <!--<h:outputText value="#{contractorFrom.customer.title}" />-->
+                                                <!--</p:column>-->
+                                                <!--</p:outputPanel>-->
+                                                <!--<p:outputPanel rendered="#{pd==0}">-->
+                                                <!--</p:outputPanel>-->
+                                                <p:column headerText="#{msgs['contractor.nameWork']}"  style="white-space:nowrap;" priority="1">
+                                                    <h:outputText value="#{contractorFrom.nameWork}" />
+                                                </p:column>
+                                                <p:column headerText="#{msgs['contractor.nameShort']}"  style="white-space:nowrap;" priority="3">
+                                                    <h:outputText value="#{contractorFrom.nameShort}" />
+                                                </p:column>
+                                                <p:column headerText="#{msgs['contractor.INN']}"  style="white-space:nowrap;" priority="2">
+                                                    <h:outputText value="#{contractorFrom.inn}" />
+                                                </p:column>
+                                                <p:column headerText="#{msgs['contractor.OGRN']}"  style="white-space:nowrap;" priority="3">
+                                                    <h:outputText value="#{contractorFrom.ogrn}" />
+                                                </p:column>
+                                            </p:dataTable>
+                                        </p:outputPanel>
+                                        <p:outputPanel rendered="#{pd==1}">
+                                            <p:dataTable id="table_contractorsCustomerShow"  var="contractorFrom" value="#{financialItemController.getContractorsInFinancialItemView(financialItemBackingBean.selectedGroupNodeDataInString)}" selectionMode="single" selection="#{financialItemBackingBean.selectedContractorFromForFinancialItemView}" rowKey="#{contractorFrom.id}" rows="25" rowsPerPageTemplate="10,25,50,100" paginator="true"
+                                                         paginatorAlwaysVisible="true" paginatorTemplate="{CurrentPageReport} {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}" currentPageReportTemplate="Контрагентов всего {totalRecords}. Страница {currentPage} из {totalPages}"
+                                                         emptyMessage="Не найдено">
+
+                                                <p:ajax event="rowSelect" update=":form_edit_contractors:buttonChoice" />
+                                                <p:ajax event="rowUnselect" update=":form_edit_contractors:buttonChoice" />
+                                                <p:ajax event="rowDblselect" listener="#{financialItemController.doubleClickSelectedRowInContractorFromChooseForTableInCustomerView}" update=":form_shipment_base_choice:table_shipment_bases:contractor_from_id :form_shipment_base_choice:table_shipment_bases" onsuccess="PF('dlg_contractor_choice').hide();"/>
+
+                                                <p:column style="width:20px; text-align: center;" priority="1">
+                                                    <f:facet name="header">
+                                                        <i class="fa fa-check" />
+                                                    </f:facet>
+                                                    <p:commandButton icon="fa fa-check" actionListener="#{financialItemController.setContractorFromForSelectedFinancialItem(contractorFrom)}" update=":form_shipment_base_choice:table_shipment_bases:contractor_from_id :form_shipment_base_choice:table_shipment_bases" onsuccess="PF('dlg_contractor_choice').hide();"/>
+                                                </p:column>
+
+                                                <p:column  headerText="#{msgs['customer']}"  style="white-space:nowrap;" priority="1">
+                                                    <h:outputText value="#{contractorFrom.customer.title}" />
+                                                </p:column>
+
+                                                <p:column headerText="#{msgs['contractor.nameWork']}"  style="white-space:nowrap;" priority="1">
+                                                    <h:outputText value="#{contractorFrom.nameWork}" />
+                                                </p:column>
+                                                <p:column headerText="#{msgs['contractor.nameShort']}"  style="white-space:nowrap;" priority="3">
+                                                    <h:outputText value="#{contractorFrom.nameShort}" />
+                                                </p:column>
+                                                <p:column headerText="#{msgs['contractor.INN']}"  style="white-space:nowrap;" priority="2">
+                                                    <h:outputText value="#{contractorFrom.inn}" />
+                                                </p:column>
+                                                <p:column headerText="#{msgs['contractor.OGRN']}"  style="white-space:nowrap;" priority="3">
+                                                    <h:outputText value="#{contractorFrom.ogrn}" />
+                                                </p:column>
+                                            </p:dataTable>
+                                        </p:outputPanel>
+                                        <h:panelGrid columns="2" cellpadding="5" style="margin: 0 auto;">
+                                            <p:commandButton id="buttonChoice" icon="fa fa-check fa-fw fa-fvm" value="Выбор" update=":form_shipment_base_choice:table_shipment_bases:contractor_from_id :form_shipment_base_choice" actionListener="#{financialItemController.doubleClickSelectedRowInContractorFromChooseForTableInCustomerView}" oncomplete="PF('dlg_contractor_choice').hide();" disabled="#{financialItemBackingBean.selectedContractorFromForFinancialItemView==null}" />
+                                            <p:commandButton value="Отмена" onclick="PF('dlg_contractor_choice').hide();" />
+                                        </h:panelGrid>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </h:form>
+                </p:dialog>
+
+                <p:dialog style="width:50%; max-width: 95%; max-height: 95%; overflow: auto;" id="dialog_contractorTo_choice" widgetVar="dlg_contractorTo_choice" resizable="false" modal="true" draggable="false" rendered="#{!canEditProducts}">
+                    <h:form id="form_edit_contractorsTo">
+                        <div class="page_title">#{msgs['contractors.title']}</div>
+                        <div class="ui-fluid" style="width: 100%;">
+                            <div class="ui-grid ui-grid-responsive">
+                                <div class="ui-grid-row">
+                                    <div class="ui-grid-col-3">
+                                        <!--<div style="height: 5px;" />-->
+
+                                        <div id="lo_contractorTo_groups">
+                                            <p:tree id="contractorTo_groups" style="width: 99.5%;" value="#{financialItemController.getContractorGroupsRoot()}" var="node" dynamic="true" selectionMode="single" selection="#{financialItemBackingBean.selectedGroupNode}">
+                                                <p:ajax event="select" listener="#{financialItemController.changeContractorsOfSelectedGroup}" update=":form_edit_contractorsTo:table_contractorsToInFinancialItemView :form_edit_contractorsTo" />
+                                                <p:treeNode expandedIcon="ui-icon-folder-open" collapsedIcon="ui-icon-folder-collapsed">
+                                                    <p:outputLabel id="contractorTo_groups_node_group" ondblclick="PF('dlg_edit_group').show();" value="#{node}" />
+                                                </p:treeNode>
+                                            </p:tree>
+                                        </div>
+                                        <div id="lo_contractorTo_groups_list">
+
+                                            <!--<p:outputPanel id="panel_contractorTo_groups_list">-->
+                                            <!--<p:selectOneMenu id="contractorTo_groups_list"  converter="contractorGroupConverter" value="#{financialItemBackingBean.selectedGroupNode}">-->
+                                            <!--<p:ajax event="change" listener="#{financialItemController.changeContractorsOfSelectedGroup}" update=":form_edit_contractorsTo:table_contractorsToInFinancialItemView form_edit_contractorsTo:contractorTo_groups" />-->
+                                            <!--<f:selectItems value="#{financialItemController.getNodeList()}" var="gtn" itemValue="#{gtn}" itemLabel="#{gtn.data}" />-->
+                                            <!--</p:selectOneMenu>-->
+                                            <!--</p:outputPanel>-->
+
+                                            <!--<p:sticky target=":form_edit_contractorsTo:panel_contractorTo_groups_list" margin="5" />-->
+                                        </div>
+                                    </div>
+
+                                    <div class="ui-grid-col-1 ui-grid-col-5px">
+                                        <div style="height: 5px;" />
+                                    </div>
+                                    <div class="ui-grid-col-10">
+                                        <p:menubar id="menubar_contractorsTo">
+                                            <f:facet name="options">
+                                                <ui:param name="pd" value="#{financialItemController.showCustomerFieldForAllAndCustomerGroup()}" />
+                                                <p:outputPanel rendered="#{pd==0}">
+                                                    <p:inputText id="searchContractorToFieldStr" value="#{financialItemBackingBean.selectedContractorFromSearchStringForFinancialItemView}" placeholder="Поиск по названию ИНН ОГРН" style="margin-right:10px">
+                                                        <p:ajax event="keyup" update="table_contractorsToInFinancialItemView" listener="#{financialItemController.refreshContractorsTableInFinancialItemView(financialItemBackingBean.selectedGroupNodeDataInString)}" />
+                                                    </p:inputText>
+                                                </p:outputPanel>
+                                                <p:outputPanel rendered="#{pd==1}">
+                                                    <p:inputText id="searchContractorToFieldStrShowCustomer" value="#{financialItemBackingBean.selectedContractorFromSearchStringForFinancialItemView}" placeholder="Поиск по названию ИНН ОГРН" style="margin-right:10px">
+                                                        <p:ajax event="keyup" update="table_contractorsToInFinancialItemViewShowCustomer" listener="#{financialItemController.refreshContractorsTableInFinancialItemView(financialItemBackingBean.selectedGroupNodeDataInString)}" />
+                                                    </p:inputText>
+                                                </p:outputPanel>
+                                                <!--<p:commandButton type="button" icon="fa fa-close fa-fw">-->
+                                                <!--<p:ajax event="click" listener="#{contractorController.resetContractorsTableData(financialItemBackingBean.selectedGroupNodeDataInString)}" update="form_edit_contractorsTo" />-->
+                                                <!--</p:commandButton>-->
+                                            </f:facet>
+                                        </p:menubar>
+
+                                        <div style="height: 5px;" />
+                                        <ui:param name="pd" value="#{financialItemController.showCustomerFieldForAllAndCustomerGroup()}" />
+                                        <p:outputPanel rendered="#{pd==0}">
+                                            <p:dataTable id="table_contractorsToInFinancialItemView" var="contractor" value="#{financialItemController.getContractorsInFinancialItemView(financialItemBackingBean.selectedGroupNodeDataInString)}" selectionMode="single" selection="#{financialItemBackingBean.selectedContractorToForFinancialItemView}" rowKey="#{contractor.id}" rows="25" rowsPerPageTemplate="10,25,50,100" paginator="true"
+                                                         paginatorAlwaysVisible="true" paginatorTemplate="{CurrentPageReport} {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}" currentPageReportTemplate="Контрагентов всего {totalRecords}. Страница {currentPage} из {totalPages}"
+                                                         emptyMessage="Не найдено">
+
+                                                <p:ajax event="rowSelect" update=":form_edit_contractorsTo:buttonChoiceContractorTo" />
+                                                <p:ajax event="rowUnselect" update=":form_edit_contractorsTo:buttonChoiceContractorTo" />
+                                                <p:ajax event="rowDblselect" listener="#{financialItemController.doubleClickSelectedRowInContractorToChooseTableInCustomerView}" update=":form_shipment_base_choice:table_shipment_bases:contractor_to_id :form_shipment_base_choice:table_shipment_bases" onsuccess="PF('dlg_contractorTo_choice').hide();"/>
+
+                                                <p:column style="width:20px; text-align: center;" priority="1">
+                                                    <f:facet name="header">
+                                                        <i class="fa fa-check" />
+                                                    </f:facet>
+                                                    <p:commandButton icon="fa fa-check" actionListener="#{financialItemController.setContractorToForSelectedFinancialItem(contractor)}" update=":form_shipment_base_choice:table_shipment_bases:contractor_to_id :form_shipment_base_choice:table_shipment_bases" onsuccess="PF('dlg_contractorTo_choice').hide();"/>
+                                                </p:column>
+
+                                                <p:column headerText="#{msgs['contractor.nameWork']}" style="white-space:nowrap;" priority="1">
+                                                    <h:outputText value="#{contractor.nameWork}" />
+                                                </p:column>
+                                                <p:column headerText="#{msgs['contractor.nameShort']}" style="white-space:nowrap;" priority="3">
+                                                    <h:outputText value="#{contractor.nameShort}" />
+                                                </p:column>
+                                                <p:column headerText="#{msgs['contractor.INN']}" style="white-space:nowrap;" priority="2">
+                                                    <h:outputText value="#{contractor.inn}" />
+                                                </p:column>
+                                                <p:column headerText="#{msgs['contractor.OGRN']}" style="white-space:nowrap;" priority="3">
+                                                    <h:outputText value="#{contractor.ogrn}" />
+                                                </p:column>
+                                            </p:dataTable>
+                                        </p:outputPanel>
+                                        <p:outputPanel rendered="#{pd==1}">
+                                            <p:dataTable id="table_contractorsToInFinancialItemViewShowCustomer" var="contractor" value="#{financialItemController.getContractorsInFinancialItemView(financialItemBackingBean.selectedGroupNodeDataInString)}" selectionMode="single" selection="#{financialItemBackingBean.selectedContractorToForFinancialItemView}" rowKey="#{contractor.id}" rows="25" rowsPerPageTemplate="10,25,50,100" paginator="true"
+                                                         paginatorAlwaysVisible="true" paginatorTemplate="{CurrentPageReport} {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}" currentPageReportTemplate="Контрагентов всего {totalRecords}. Страница {currentPage} из {totalPages}"
+                                                         emptyMessage="Не найдено">
+
+                                                <p:ajax event="rowSelect" update=":form_edit_contractorsTo:buttonChoiceContractorTo" />
+                                                <p:ajax event="rowUnselect" update=":form_edit_contractorsTo:buttonChoiceContractorTo" />
+                                                <p:ajax event="rowDblselect" listener="#{financialItemController.doubleClickSelectedRowInContractorToChooseTableInCustomerView}" update=":form_shipment_base_choice:table_shipment_bases:contractor_to_id :form_shipment_base_choice:table_shipment_bases" onsuccess="PF('dlg_contractorTo_choice').hide();"/>
+
+                                                <p:column style="width:20px; text-align: center;" priority="1">
+                                                    <f:facet name="header">
+                                                        <i class="fa fa-check" />
+                                                    </f:facet>
+                                                    <p:commandButton icon="fa fa-check" actionListener="#{financialItemController.setContractorToForSelectedFinancialItem(contractor)}" update=":form_shipment_base_choice:table_shipment_bases:contractor_to_id :form_shipment_base_choice:table_shipment_bases" onsuccess="PF('dlg_contractorTo_choice').hide();"/>
+                                                </p:column>
+
+                                                <p:column headerText="#{msgs['customer']}" style="white-space:nowrap;" priority="1">
+                                                    <h:outputText value="#{contractor.customer.title}" />
+                                                </p:column>
+                                                <p:column headerText="#{msgs['contractor.nameWork']}" style="white-space:nowrap;" priority="1">
+                                                    <h:outputText value="#{contractor.nameWork}" />
+                                                </p:column>
+                                                <p:column headerText="#{msgs['contractor.nameShort']}" style="white-space:nowrap;" priority="3">
+                                                    <h:outputText value="#{contractor.nameShort}" />
+                                                </p:column>
+                                                <p:column headerText="#{msgs['contractor.INN']}" style="white-space:nowrap;" priority="2">
+                                                    <h:outputText value="#{contractor.inn}" />
+                                                </p:column>
+                                                <p:column headerText="#{msgs['contractor.OGRN']}" style="white-space:nowrap;" priority="3">
+                                                    <h:outputText value="#{contractor.ogrn}" />
+                                                </p:column>
+                                            </p:dataTable>
+
+                                        </p:outputPanel>
+                                        <h:panelGrid columns="2" cellpadding="5" style="margin: 0 auto;">
+                                            <p:commandButton id="buttonChoiceContractorTo" icon="fa fa-check fa-fw fa-fvm" value="Выбор" update=":form_shipment_base_choice:table_shipment_bases:contractor_to_id :form_shipment_base_choice:table_shipment_bases" actionListener="#{financialItemController.doubleClickSelectedRowInContractorToChooseTableInCustomerView}" oncomplete="PF('dlg_contractorTo_choice').hide();" disabled="#{financialItemBackingBean.selectedContractorToForFinancialItemView==null}" />
+                                            <p:commandButton value="Отмена" onclick="PF('dlg_contractorTo_choice').hide();" />
+                                        </h:panelGrid>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </h:form>
+                </p:dialog>
+
+                <p:dialog style="width:50%; max-width: 95%; max-height: 95%; overflow: auto;" id="dialog_contractorFrom_choiceExchange" widgetVar="dlg_contractor_choiceExchange" resizable="false" modal="true" draggable="false" rendered="#{!canEditProducts}">
+                    <h:form  id="form_edit_contractorsToExchange">
+                        <div class="page_title">#{msgs['contractors.title']}</div>
+
+                        <div style="height: 5px;" />
+                        <p:dataTable id="table_contractorsToExchange" var="contractor" value="#{financialItemController.getContractorsInFinancialItemView('All')}" selectionMode="single" selection="#{financialItemBackingBean.contractorToForFilter}" rowKey="#{contractor.id}" rows="25" rowsPerPageTemplate="10,25,50,100" paginator="true"
+                                     paginatorAlwaysVisible="true" filteredValue="#{financialItemBackingBean.filteredContractorsTo}" paginatorTemplate="{CurrentPageReport} {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}" currentPageReportTemplate="Контрагентов всего {totalRecords}. Страница {currentPage} из {totalPages}"
+                                     emptyMessage="Не найдено" widgetVar="contractorToForFilterWidgetVar">
+
+                            <p:ajax event="rowSelect" update=":form_edit_contractorsToExchange:buttonChoiceContractorToExchange" />
+                            <p:ajax event="rowUnselect" update=":form_edit_contractorsToExchange:buttonChoiceContractorToExchange" />
+                            <p:ajax event="rowDblselect" listener="#{financialItemController.doubleClickSelectedRowInContractorToForFilterByContractorFromWhenContractorChosen}" update=":form_shipment_base_choice:contractor_to_for_filter_id :form_shipment_base_choice:table_shipment_bases :form_shipment_base_choice:table_shipment_bases:creditField :form_shipment_base_choice:table_shipment_bases:debitField :form_shipment_base_choice:table_shipment_bases:totalField :form_shipment_base_choice:table_shipment_bases:totalFieldBalance :form_shipment_base_choice:table_shipment_bases:debitBalance :form_shipment_base_choice:table_shipment_bases:creditBalance" onsuccess="PF('dlg_contractor_choiceExchange').hide();"/>
+
+                            <f:facet name="header">
+                                <p:outputPanel>
+                                    <h:outputText style="margin-right:5px;" value="Поиск:" />
+                                    <p:inputText id="globalFilter" onkeyup="PF('contractorToForFilterWidgetVar').filter()" style="width:150px" placeholder="Поиск по названию, ИНН, ОГРН"/>
+                                </p:outputPanel>
+                            </f:facet>
+
+                            <p:column style="width:20px; text-align: center;" priority="1">
+                                <f:facet name="header">
+                                    <i class="fa fa-check" />
+                                </f:facet>
+                                <p:commandButton icon="fa fa-check" actionListener="#{financialItemController.setContractorToForFilterByContractorToForContractorChosenView(contractor)}" update=":form_shipment_base_choice:contractor_to_for_filter_id :form_shipment_base_choice:table_shipment_bases :form_shipment_base_choice:table_shipment_bases:creditField :form_shipment_base_choice:table_shipment_bases:debitField :form_shipment_base_choice:table_shipment_bases:totalField :form_shipment_base_choice:table_shipment_bases:totalFieldBalance :form_shipment_base_choice:table_shipment_bases:debitBalance :form_shipment_base_choice:table_shipment_bases:creditBalance" onsuccess="PF('dlg_contractor_choiceExchange').hide();"/>
+                            </p:column>
+
+                            <p:column headerText="#{msgs['customer']}" filterStyle="display:none"  filterBy="#{contractor.customer.title}" filterMatchMode="contains" style="white-space:nowrap;" priority="1">
+                                <h:outputText value="#{contractor.customer.title}" />
+                            </p:column>
+                            <p:column headerText="#{msgs['contractor.nameWork']}" filterStyle="display:none" filterBy="#{contractor.nameWork}" filterMatchMode="contains" style="white-space:nowrap;" priority="1">
+                                <h:outputText value="#{contractor.nameWork}" />
+                            </p:column>
+                            <p:column headerText="#{msgs['contractor.nameShort']}" filterStyle="display:none" filterBy="#{contractor.nameShort}" filterMatchMode="contains" style="white-space:nowrap;" priority="3">
+                                <h:outputText value="#{contractor.nameShort}" />
+                            </p:column>
+                            <p:column headerText="#{msgs['contractor.INN']}" filterStyle="display:none" filterBy="#{contractor.inn}" filterMatchMode="contains" style="white-space:nowrap;" priority="2">
+                                <h:outputText value="#{contractor.inn}" />
+                            </p:column>
+                            <p:column headerText="#{msgs['contractor.OGRN']}" filterStyle="display:none"  filterBy="#{contractor.ogrn}" filterMatchMode="contains" style="white-space:nowrap;" priority="3">
+                                <h:outputText value="#{contractor.ogrn}" />
+                            </p:column>
+                        </p:dataTable>
+                        <h:panelGrid columns="2" cellpadding="5" style="margin: 0 auto;">
+                            <p:commandButton id="buttonChoiceContractorToExchange" icon="fa fa-check fa-fw fa-fvm" value="Выбор" update=":form_shipment_base_choice:contractor_to_for_filter_id :form_shipment_base_choice:table_shipment_bases :form_shipment_base_choice:table_shipment_bases:creditField :form_shipment_base_choice:table_shipment_bases:debitField :form_shipment_base_choice:table_shipment_bases:totalField :form_shipment_base_choice:table_shipment_bases:totalFieldBalance :form_shipment_base_choice:table_shipment_bases:debitBalance :form_shipment_base_choice:table_shipment_bases:creditBalance" actionListener="#{financialItemController.doubleClickSelectedRowInContractorToForFilterByContractorFromWhenContractorChosen}" oncomplete="PF('dlg_contractor_choiceExchange').hide();" disabled="#{financialItemBackingBean.contractorToForFilter==null}" />
+                            <p:commandButton value="Отмена" onclick="PF('dlg_contractor_choiceExchange').hide();" />
+                        </h:panelGrid>
+                    </h:form>
+                </p:dialog>
+
+                <p:dialog style="width:50%; max-width: 95%; max-height: 95%; overflow: auto;" id="dialog_contractorTo_choiceExchange" widgetVar="dlg_contractorFrom_choiceExchange" resizable="false" modal="true" draggable="false" rendered="#{!canEditProducts}">
+                    <h:form  id="form_edit_contractorsFromExchange">
+                        <div class="page_title">#{msgs['contractors.title']}</div>
+                        <div style="height: 5px;" />
+                        <p:dataTable id="table_contractorsFromExchange"  var="contractorFrom" value="#{financialItemController.getContractorsInFinancialItemView('All')}" selectionMode="single" selection="#{financialItemBackingBean.contractorFromForFilter}" rowKey="#{contractorFrom.id}" rows="25" rowsPerPageTemplate="10,25,50,100" paginator="true"
+                                     paginatorAlwaysVisible="true" filteredValue="#{financialItemBackingBean.filteredContractorsFrom}" paginatorTemplate="{CurrentPageReport} {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}" currentPageReportTemplate="Контрагентов всего {totalRecords}. Страница {currentPage} из {totalPages}"
+                                     emptyMessage="Не найдено" widgetVar="contractorFromForFilterWidgetVar">
+
+                            <p:ajax event="rowSelect" update=":form_edit_contractorsFromExchange:buttonChoiceExchange" />
+                            <p:ajax event="rowUnselect" update=":form_edit_contractorsFromExchange:buttonChoiceExchange" />
+                            <p:ajax event="rowDblselect" listener="#{financialItemController.doubleClickSelectedRowInContractorToForFilterByContractorFromWhenContractorChosen}" update=":form_shipment_base_choice:contractor_from_for_filter_id :form_shipment_base_choice:table_shipment_bases :form_shipment_base_choice:table_shipment_bases:creditField :form_shipment_base_choice:table_shipment_bases:debitField :form_shipment_base_choice:table_shipment_bases:totalField :form_shipment_base_choice:table_shipment_bases:totalFieldBalance :form_shipment_base_choice:table_shipment_bases:debitBalance :form_shipment_base_choice:table_shipment_bases:creditBalance" onsuccess="PF('dlg_contractorFrom_choiceExchange').hide();"/>
+
+                            <f:facet name="header">
+                                <p:outputPanel>
+                                    <h:outputText style="margin-right:5px;" value="Поиск:" />
+                                    <p:inputText id="globalFilter" onkeyup="PF('contractorFromForFilterWidgetVar').filter()" style="width:150px" placeholder="Поиск по названию, ИНН, ОГРН"/>
+                                </p:outputPanel>
+                            </f:facet>
+
+                            <p:column style="width:20px; text-align: center;" priority="1">
+                                <f:facet name="header">
+                                    <i class="fa fa-check" />
+                                </f:facet>
+                                <p:commandButton icon="fa fa-check" actionListener="#{financialItemController.setContractorFromForFilterByContractorFromForContractorChosenView(contractorFrom)}" update=":form_shipment_base_choice:contractor_from_for_filter_id :form_shipment_base_choice:table_shipment_bases :form_shipment_base_choice:table_shipment_bases:creditField :form_shipment_base_choice:table_shipment_bases:debitField :form_shipment_base_choice:table_shipment_bases:totalField :form_shipment_base_choice:table_shipment_bases:totalFieldBalance :form_shipment_base_choice:table_shipment_bases:debitBalance :form_shipment_base_choice:table_shipment_bases:creditBalance" onsuccess="PF('dlg_contractorFrom_choiceExchange').hide();"/>
+                            </p:column>
+
+                            <p:column  headerText="#{msgs['customer']}" filterStyle="display:none" filterBy="#{contractorFrom.customer.title}"  filterMatchMode="contains" style="white-space:nowrap;" priority="1">
+                                <h:outputText value="#{contractorFrom.customer.title}" />
+                            </p:column>
+                            <p:column headerText="#{msgs['contractor.nameWork']}" filterStyle="display:none" filterBy="#{contractorFrom.nameWork}" filterMatchMode="contains" style="white-space:nowrap;" priority="1">
+                                <h:outputText value="#{contractorFrom.nameWork}" />
+                            </p:column>
+                            <p:column filterBy="#{contractorFrom.nameShort}" filterStyle="display:none" filterMatchMode="contains" headerText="#{msgs['contractor.nameShort']}"  style="white-space:nowrap;" priority="3">
+                                <h:outputText value="#{contractorFrom.nameShort}" />
+                            </p:column>
+                            <p:column headerText="#{msgs['contractor.INN']}" filterStyle="display:none" filterBy="#{contractorFrom.inn}" filterMatchMode="contains" style="white-space:nowrap;" priority="2">
+                                <h:outputText value="#{contractorFrom.inn}" />
+                            </p:column>
+                            <p:column headerText="#{msgs['contractor.OGRN']}" filterStyle="display:none" filterBy="#{contractorFrom.ogrn}" filterMatchMode="contains" style="white-space:nowrap;" priority="3">
+                                <h:outputText value="#{contractorFrom.ogrn}" />
+                            </p:column>
+                        </p:dataTable>
+                        <h:panelGrid columns="2" cellpadding="5" style="margin: 0 auto;">
+                            <p:commandButton id="buttonChoiceExchange" icon="fa fa-check fa-fw fa-fvm" value="Выбор" update=":form_shipment_base_choice:contractor_from_for_filter_id :form_shipment_base_choice:table_shipment_bases :form_shipment_base_choice:table_shipment_bases:creditField :form_shipment_base_choice:table_shipment_bases:debitField :form_shipment_base_choice:table_shipment_bases:totalField :form_shipment_base_choice:table_shipment_bases:totalFieldBalance :form_shipment_base_choice:table_shipment_bases:debitBalance :form_shipment_base_choice:table_shipment_bases:creditBalance" actionListener="#{financialItemController.doubleClickSelectedRowInContractorToForFilterByContractorFromWhenContractorChosen}" oncomplete="PF('dlg_contractorFrom_choiceExchange').hide();" disabled="#{financialItemBackingBean.contractorFromForFilter==null}" />
+                            <p:commandButton value="Отмена" onclick="PF('dlg_contractorFrom_choiceExchange').hide();" />
+                        </h:panelGrid>
+                    </h:form>
+                </p:dialog>
+
+                <p:dialog id="dialog_delete_goodKind" header="Удаление Доп.проводки" widgetVar="dlg_delete_goodKind" resizable="false" modal="true" draggable="false" showEffect="fade" hideEffect="explode" rendered="#{loginController.hasAccessTo(enumBean.modelFinancialItem, enumBean.accessDelete)}">
+                    <h:form id="form_goodKind_delete">
+                        <h:panelGrid columns="1" cellpadding="5" style="width: 100%;">
+                            <h:outputLabel value="Вы действительно хотите удалить данный Доп.проводки?" />
+                            <h:outputLabel style="font-weight: bold;" value="Вид товара: #{financialItemBackingBean.selectedInPaymentWay.description} идент.: #{financialItemBackingBean.selectedInPaymentWay.id}" />
+                            <h:panelGrid columns="2" cellpadding="5" style="margin: 0 auto;">
+                                <p:commandButton icon="fa fa-times-circle fa-fw fa-fvm" value="Удалить" update=":form_shipment_base_choice:table_shipment_bases:form_product_type_choice:table_product_types :form_shipment_base_choice" actionListener="#{financialItemController.buttonActionRemoveFinancialItem}"  oncomplete="PF('dlg_delete_goodKind').hide();" />
+                                <p:commandButton value="Отмена" onclick="PF('dlg_delete_goodKind').hide();" />
+                            </h:panelGrid>
+                        </h:panelGrid>
+                    </h:form>
+                </p:dialog>
+
+                <p:dialog id="dialog_add_inPaymentWay" header="Добавление Доп.проводки" widgetVar="dlg_inPaymentWay" resizable="false" modal="true" draggable="false" showEffect="fade" hideEffect="explode" rendered="#{loginController.hasAccessTo(enumBean.modelFinancialItem, enumBean.accessDelete)}">
+                    <h:form id="form_add_inPaymentWay">
+                        <p:panelGrid id="bac_fields" styleClass="ui-noborder" style="margin-left:14px">
+                            <p:row>
+                                <p:column>
+                                    <p:outputLabel value="#{msgs['inpaymentWay.objectType']}" />
+                                </p:column>
+                                <p:column>
+                                    <p:selectOneMenu panelStyle="width:70px;" style="width:60px;" value="#{financialItemBackingBean.selectedInPaymentWay.objectType}" required="false">
+                                        <f:selectItem itemLabel="#{msgs['inpaymentWay.type.debt']}" itemValue="2" />
+                                        <f:selectItem itemLabel="#{msgs['inpaymentWay.type.drive']}" itemValue="1" />
+                                        <f:selectItem itemLabel="#{msgs['inpaymentWay.type.advance']}" itemValue="3" />
+                                        <f:selectItem itemLabel="#{msgs['inpaymentWay.type.request']}" itemValue="4" />
+                                        <f:selectItem itemLabel="#{msgs['inpaymentWay.type.oil']}" itemValue="5" />
+                                    </p:selectOneMenu>
+                                </p:column>
+                            </p:row>
+                            <p:row>
+                                <p:column>
+                                    <p:outputLabel value="#{msgs['inpaymentWay.objectLink']}" />
+                                </p:column>
+                                <p:column>
+                                    <p:inputText value="#{financialItemBackingBean.selectedInPaymentWay.objectLink}" />
+                                </p:column>
+                            </p:row>
+                            <p:row>
+                                <p:column>
+                                    <p:outputLabel value="#{msgs['inpaymentWay.sum']}" />
+                                </p:column>
+                                <p:column>
+                                    <p:inputText  value="#{financialItemBackingBean.selectedInPaymentWay.sum}" style="text-align: right; width:88%;">
+                                        <f:convertNumber minIntegerDigits="1" minFractionDigits="2" groupingUsed="true" />
+                                    </p:inputText>
+                                </p:column>
+                            </p:row>
+                            <p:row>
+                                <p:column>
+                                    <p:outputLabel value="#{msgs['inpaymentWay.description']}" />
+                                </p:column>
+                                <p:column>
+                                    <p:inputText value="#{financialItemBackingBean.selectedInPaymentWay.description}"/>
+                                </p:column>
+                            </p:row>
+                        </p:panelGrid>
+                        <h:panelGrid columns="2" cellpadding="5" style="margin: 0 auto;">
+                            <p:commandButton icon="fa fa-times-circle fa-fw fa-fvm" value="Сохранить" update=":form_shipment_base_choice:table_shipment_bases:form_product_type_choice:table_product_types :form_shipment_base_choice:table_shipment_bases" actionListener="#{financialItemController.buttonActionNewInPaymentWay}" oncomplete="PF('dlg_inPaymentWay').hide();" />
+                            <p:commandButton value="Отмена" onclick="PF('dlg_inPaymentWay').hide();" />
+                        </h:panelGrid>
+
+                    </h:form>
+                </p:dialog>
+
+                <h:form id="form_shipment_base_choice">
+                    <p:menubar id="menubar_shipment_bases" rendered="#{loginController.hasAccessTo(enumBean.modelBases, enumBean.accessView) or loginController.hasAccessTo(enumBean.modelBases, enumBean.accessEdit)}">
+                        <p:menuitem value="Добавить" disabled="#{edit_readOnly}" icon="fa fa-plus-circle fa-fw fa-fvm" actionListener="#{financialItemController.buttonActionAddNewFinancialItem}" update="table_shipment_bases" />
+                        <p:menuitem value="Удалить" icon="fa fa-times-circle fa-fw fa-fvm" onclick="PF('dlg_delete_shipment_base').show();" update="form_shipment_delete" disabled="#{financialItemBackingBean.selectedFinancialItemInTable==null or edit_readOnly}" rendered="#{loginController.hasAccessTo(enumBean.modelBases, enumBean.accessDelete)}"/>
+                        <f:facet name="options">
+                            <!--<h:outputText style="margin-right:5px;margin-left:10px;" value="#{msgs['financialItem.balance']}:"/>-->
+                            <h:outputText style="margin-right:5px;margin-left:10px;" value="#{msgs['financialItem.from']}:"/>
+                            <p:calendar id="eventDateFrom" value="#{financialItemBackingBean.financialItemDateFrom}" size="7" pattern="dd.MM.yyyy" locale="ru" showOn="button">
+                                <p:ajax event="keyup" update="table_shipment_bases :form_shipment_base_choice:table_shipment_bases:creditField :form_shipment_base_choice:table_shipment_bases:debitField :form_shipment_base_choice:table_shipment_bases:totalField :form_shipment_base_choice:table_shipment_bases:totalFieldBalance :form_shipment_base_choice:table_shipment_bases:debitBalance :form_shipment_base_choice:table_shipment_bases:creditBalance" listener="#{financialItemController.refreshFinancialItemsForContractorFrom}" />
+                                <p:ajax event="dateSelect" update="table_shipment_bases :form_shipment_base_choice:table_shipment_bases:creditField :form_shipment_base_choice:table_shipment_bases:debitField :form_shipment_base_choice:table_shipment_bases:totalField :form_shipment_base_choice:table_shipment_bases:totalFieldBalance :form_shipment_base_choice:table_shipment_bases:debitBalance :form_shipment_base_choice:table_shipment_bases:creditBalance" listener="#{financialItemController.onDateSelectForContractorFromChoosenView}"/>
+                            </p:calendar>
+                            <h:outputText style="margin-right:5px; margin-left:5px;" value="#{msgs['financialItem.to']}:"/>
+                            <p:calendar id="eventDateTo" value="#{financialItemBackingBean.financialItemDateTo}"  size="7" pattern="dd.MM.yyyy" locale="ru" showOn="button">
+                                <p:ajax event="keyup" update="table_shipment_bases :form_shipment_base_choice:table_shipment_bases:creditField :form_shipment_base_choice:table_shipment_bases:debitField :form_shipment_base_choice:table_shipment_bases:totalField :form_shipment_base_choice:table_shipment_bases:totalFieldBalance :form_shipment_base_choice:table_shipment_bases:debitBalance :form_shipment_base_choice:table_shipment_bases:creditBalance" listener="#{financialItemController.refreshFinancialItemsForContractorFrom}" />
+                                <p:ajax event="dateSelect" update="table_shipment_bases :form_shipment_base_choice:table_shipment_bases:creditField :form_shipment_base_choice:table_shipment_bases:debitField :form_shipment_base_choice:table_shipment_bases:totalField :form_shipment_base_choice:table_shipment_bases:totalFieldBalance :form_shipment_base_choice:table_shipment_bases:debitBalance :form_shipment_base_choice:table_shipment_bases:creditBalance" listener="#{financialItemController.onDateSelectForContractorFromChoosenView}"/>
+                            </p:calendar>
+
+                            <h:outputText style="margin-left:5px; margin-right:10px;" value="#{msgs['financialItem.contractorFrom']}:"/>
+                            <p:inputText id="contractor_from_for_filter_id" readonly="true" value="#{financialItemBackingBean.contractorFromForFilter.nameShort!=null ? financialItemBackingBean.contractorFromForFilter.nameShort : ''}"/>
+                            <p:commandButton style="width: 30px;margin-left:5px;" align="right" update="form_edit_contractorsFromExchange" icon="fa fa-list-ul" onsuccess="PF('dlg_contractorFrom_choiceExchange').show();"/>
+                            <p:commandButton type="button" icon="fa fa-close fa-fw">
+                                <p:ajax event="click" listener="#{financialItemController.resetFinancialItemsOfContractorsTableContractorFrom}" update="form_shipment_base_choice" />
+                            </p:commandButton>
+
+                            <h:outputText style="margin-left:5px; margin-right:10px;" value="#{msgs['financialItem.contractorTo']}:"/>
+                            <p:inputText  id="contractor_to_for_filter_id" readonly="true" value="#{financialItemBackingBean.contractorToForFilter.nameShort!=null ? financialItemBackingBean.contractorToForFilter.nameShort : ''}"/>
+                            <p:commandButton style="width: 30px;margin-left:5px;" align="right" update="form_edit_contractorsToExchange" icon="fa fa-list-ul" onsuccess="PF('dlg_contractor_choiceExchange').show();"/>
+                            <p:commandButton type="button" icon="fa fa-close fa-fw">
+                                <p:ajax event="click" listener="#{financialItemController.resetFinancialItemsOfContractorsTableContractorTo}" update="form_shipment_base_choice" />
+                            </p:commandButton>
+                        </f:facet>
+                    </p:menubar>
+
+                    <div style="height: 5px;" />
+                    <p:remoteCommand name="refreshFooter" update=":form_shipment_base_choice:table_shipment_bases:creditField :form_shipment_base_choice:table_shipment_bases:debitField :form_shipment_base_choice:table_shipment_bases:totalField :form_shipment_base_choice:table_shipment_bases:totalFieldBalance :form_shipment_base_choice:table_shipment_bases:debitBalance :form_shipment_base_choice:table_shipment_bases:creditBalance"/>
+                    <p:dataTable tableStyle="width: auto"  id="table_shipment_bases" rowExpandMode="single"  var="financial_item" rowStyleClass="#{(financial_item.active) eq false ? 'Active' : null}" value="#{financialItemController.getFinancialItemsForContractorFrom()}" editMode="cell" editable="#{loginController.hasAccessTo(enumBean.modelFinancialItem, enumBean.accessEdit)}" selectionMode="single" selection="#{financialItemBackingBean.selectedFinancialItemInTable}" rowKey="#{financial_item.id}" rowIndexVar="row" rows="50" paginator="false"
+                                 paginatorTemplate="{CurrentPageReport} {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink}" currentPageReportTemplate="Финансовые проводки всего {totalRecords}. Страница {currentPage} из {totalPages}" emptyMessage="Не найдено" widgetVar="wdgV_finantial_item">
+                        <p:ajax event="rowToggle"  listener="#{financialItemController.test}" />
+                        <p:ajax event="rowSelect" update=":form_shipment_base_choice:menubar_shipment_bases :form_shipment_base_choice:table_shipment_bases:creditField :form_shipment_base_choice:table_shipment_bases:debitField :form_shipment_base_choice:table_shipment_bases:totalField :form_shipment_base_choice:table_shipment_bases:totalFieldBalance :form_shipment_base_choice:table_shipment_bases:debitBalance :form_shipment_base_choice:table_shipment_bases:creditBalance" />
+                        <p:ajax event="rowUnselect" update=":form_shipment_base_choice:menubar_shipment_bases" />
+
+                        <p:ajax event="cellEdit" listener="#{financialItemController.onColumnEditFinancialItem}" update="table_shipment_bases :form_shipment_base_choice:table_shipment_bases:creditField :form_shipment_base_choice:table_shipment_bases:debitField :form_shipment_base_choice:table_shipment_bases:totalField :form_shipment_base_choice:table_shipment_bases:totalFieldBalance :form_shipment_base_choice:table_shipment_bases:debitBalance :form_shipment_base_choice:table_shipment_bases:creditBalance" />
+
+
+                        <f:facet name="header">
+                            <h:outputText value="Финансовые проводки"/>
+                        </f:facet>
+
+                        <p:columnGroup type="header">
+                            <p:row>
+                                <p:column headerText="Сальдо" colspan="6" style="text-align:right">
+                                </p:column>
+                                <p:column>
+                                    <f:facet name="header">
+                                        <p:outputPanel id="totalFieldBalance">
+                                    <ui:param name="pd" value="#{financialItemController.getSwitchParameter()}" />
+                                    <p:outputPanel rendered="#{pd==1}">
+                                    <h:outputText rendered="#{financialItemBackingBean.contractorFromForFilter!=null and financialItemBackingBean.contractorToForFilter!=null and financialItemBackingBean.financialItemDateFrom!=null}"
+                                    value="#{financialItemService.sum(financialItemService.findDebitOrCreditWhenChoosenContractor(financialItemBackingBean.financialItemDateFrom,financialItemBackingBean.financialItemDateTo,financialItemBackingBean.contractorFromForFilter,
+                                    financialItemBackingBean.contractorToForFilter,contractorModelBean.selectedContractor),financialItemService.findDebitOrCreditWhenChoosenContractor(financialItemBackingBean.financialItemDateFrom,financialItemBackingBean.financialItemDateTo,financialItemBackingBean.contractorToForFilter,
+                                    financialItemBackingBean.contractorFromForFilter,contractorModelBean.selectedContractor))}">
+                                    <f:convertNumber minIntegerDigits="1" minFractionDigits="2" groupingUsed="true" />
+                                    </h:outputText>
+                                    </p:outputPanel>
+                                    <p:outputPanel rendered="#{pd==0}">
+                                    <h:outputText rendered="#{financialItemBackingBean.contractorFromForFilter!=null and financialItemBackingBean.contractorToForFilter!=null and financialItemBackingBean.financialItemDateFrom!=null}"
+                                    value="#{financialItemService.sum(financialItemService.findDebitOrCreditWhenChoosenContractor(financialItemBackingBean.financialItemDateFrom,financialItemBackingBean.financialItemDateTo,financialItemBackingBean.contractorToForFilter,
+                                    financialItemBackingBean.contractorFromForFilter,contractorModelBean.selectedContractor),financialItemService.findDebitOrCreditWhenChoosenContractor(financialItemBackingBean.financialItemDateFrom,financialItemBackingBean.financialItemDateTo,financialItemBackingBean.contractorFromForFilter,
+                                    financialItemBackingBean.contractorToForFilter,contractorModelBean.selectedContractor))}">
+                                    <f:convertNumber minIntegerDigits="1" minFractionDigits="2" groupingUsed="true" />
+                                    </h:outputText>
+                                    </p:outputPanel>
+                                        </p:outputPanel>
+                                    </f:facet>
+                                </p:column>
+                                <p:column>
+                                    <f:facet name="header">
+                                        <p:outputPanel id="debitBalance">
+                                    <ui:param name="pd" value="#{financialItemController.getSwitchParameter()}" />
+                                    <p:outputPanel rendered="#{pd==1}">
+                                    <h:outputText rendered="#{financialItemBackingBean.contractorFromForFilter!=null and financialItemBackingBean.contractorToForFilter!=null and financialItemBackingBean.financialItemDateFrom!=null}"
+                                    value="#{financialItemService.findDebitOrCreditWhenChoosenContractor(financialItemBackingBean.financialItemDateFrom,financialItemBackingBean.financialItemDateTo,financialItemBackingBean.contractorFromForFilter,
+                                    financialItemBackingBean.contractorToForFilter,contractorModelBean.selectedContractor)}">
+                                    <f:convertNumber minIntegerDigits="1" minFractionDigits="2" groupingUsed="true" />
+                                    </h:outputText>
+                                    </p:outputPanel>
+                                    <p:outputPanel rendered="#{pd==0}">
+                                    <h:outputText rendered="#{financialItemBackingBean.contractorFromForFilter!=null and financialItemBackingBean.contractorToForFilter!=null and financialItemBackingBean.financialItemDateFrom!=null}"
+                                    value="#{financialItemService.findDebitOrCreditWhenChoosenContractor(financialItemBackingBean.financialItemDateFrom,financialItemBackingBean.financialItemDateTo,financialItemBackingBean.contractorToForFilter,
+                                    financialItemBackingBean.contractorFromForFilter,contractorModelBean.selectedContractor)}">
+                                    <f:convertNumber minIntegerDigits="1" minFractionDigits="2" groupingUsed="true" />
+                                    </h:outputText>
+                                    </p:outputPanel>
+                                        </p:outputPanel>
+                                    </f:facet>
+                                </p:column>
+
+
+                                <p:column>
+                                    <f:facet name="header">
+                                        <p:outputPanel id="creditBalance">
+                                    <ui:param name="pd" value="#{financialItemController.getSwitchParameter()}" />
+                                    <p:outputPanel rendered="#{pd==1}">
+                                    <h:outputText rendered="#{financialItemBackingBean.contractorFromForFilter!=null and financialItemBackingBean.contractorToForFilter!=null and financialItemBackingBean.financialItemDateFrom!=null}"
+                                    value="#{financialItemService.findDebitOrCreditWhenChoosenContractor(financialItemBackingBean.financialItemDateFrom,financialItemBackingBean.financialItemDateTo,financialItemBackingBean.contractorToForFilter,
+                                    financialItemBackingBean.contractorFromForFilter,contractorModelBean.selectedContractor)}">
+                                    <f:convertNumber minIntegerDigits="1" minFractionDigits="2" groupingUsed="true" />
+                                    </h:outputText>
+                                    </p:outputPanel>
+                                    <p:outputPanel rendered="#{pd==0}">
+                                    <h:outputText rendered="#{financialItemBackingBean.contractorFromForFilter!=null and financialItemBackingBean.contractorToForFilter!=null and financialItemBackingBean.financialItemDateFrom!=null}"
+                                    value="#{financialItemService.findDebitOrCreditWhenChoosenContractor(financialItemBackingBean.financialItemDateFrom,financialItemBackingBean.financialItemDateTo,financialItemBackingBean.contractorFromForFilter,
+                                    financialItemBackingBean.contractorToForFilter,contractorModelBean.selectedContractor)}">
+                                    <f:convertNumber minIntegerDigits="1" minFractionDigits="2" groupingUsed="true" />
+                                    </h:outputText>
+                                    </p:outputPanel>
+                                        </p:outputPanel>
+                                    </f:facet>
+                                </p:column>
+                            </p:row>
+                            <p:row>
+                                <p:column headerText="#{msgs['financialItem.contractorFrom']}" style="min-width:220px; text-align: center;" priority="1"/>
+                                <p:column>
+                                <f:facet name="header">
+                                    <i class="fa fa-exchange" />
+                                </f:facet>
+                                </p:column>
+                                <p:column headerText="#{msgs['financialItem.contractorTo']}" style="min-width:220px;"/>
+                                <p:column headerText="#{msgs['financialItem.createdDate']}" style="min-width:70px; white-space: nowrap;"/>
+                                <p:column headerText="#{msgs['inpaymentWay.object']}" style="min-width:70px;"/>
+                                <p:column headerText="#{msgs['inpaymentWay.description']}" style="min-width:120px;"/>
+                                <p:column headerText="#{msgs['financialItem.sum']}" style="min-width:100px;"/>
+                                <p:column headerText="#{msgs['financialItem.Debit']}" style="min-width:100px;"/>
+                                <p:column headerText="#{msgs['financialItem.Credit']}" style="min-width:100px;"/>
+                            </p:row>
+                        </p:columnGroup>
+
+
+                        <p:column>
+                              <p:cellEditor>
+                                <f:facet name="output">
+                                        <h:outputText id="inputContractorFromSwitchContractorFrom" value="#{financial_item.contractorFrom.nameShort}"/>
+                                </f:facet>
+                                <f:facet name="input">
+                                    <p:outputPanel id="panelChangeContractorFromView">
+                                        <ui:param name="pd" value="#{financialItemController.getSwitchParameter()}" />
+                                        <p:outputPanel rendered="#{pd==1}">
+                                        <h:outputText id="outputContractorFromSwitchContractorTo" value="#{financial_item.contractorFrom.nameShort}"/>
+                                        </p:outputPanel>
+                                    <p:outputPanel rendered="#{pd==0}">
+                                    <table width="100%" border="0" cellpadding="0" cellspacing="0">
+                                        <tr>
+                                            <td><p:inputText style="width:98%;padding: 0" styleClass="field_readonly" id="contractor_from_id" readonly="true" value="#{financial_item.contractorFrom.nameShort!=null ? financial_item.contractorFrom.nameShort : ''}"/></td>
+                                            <td style="width: 30px;" align="right">
+                                                <p:commandButton style="width:30px;" process="@this" actionListener="#{financialItemController.updateFinancialItemForContractorChoose(financial_item)}" update="form_edit_contractors" icon="fa fa-list-ul" onsuccess="PF('dlg_contractor_choice').show();"/>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                    </p:outputPanel>
+                                    </p:outputPanel>
+                                </f:facet>
+                            </p:cellEditor>
+                        </p:column>
+
+                        <p:column >
+                                <p:commandButton id="changeFromContractorToContractor"  icon="fa fa-exchange">
+                                    <p:ajax event="click"
+                                            listener="#{financialItemController.switchFromAllContractorsViewToContractorsOfCustomersView}"
+                                            process="@this"
+                                            oncomplete="refreshFooter();" update="creditField debitField totalField totalFieldBalance debitBalance creditBalance"/>
+                                    <f:attribute name="financial_item"
+                                                 value="#{financial_item}" />
+                                </p:commandButton>
+                        </p:column>
+
+                        <!--<p:column style="width:20px; text-align: center;" priority="1">-->
+                            <!--<f:facet name="header">-->
+                                <!--<i class="fa fa-exchange" />-->
+                            <!--</f:facet>-->
+                                <!--<p:commandButton id="changeToContractorFromContractor" icon="fa fa-exchange">-->
+                                    <!--<p:ajax event="click"-->
+                                            <!--listener="#{financialItemController.switchFromContractorsOfCustomersViewToAllContractorsView}" />-->
+                                    <!--<f:attribute name="financial_itemTo"-->
+                                                 <!--value="#{financial_item}" />-->
+                                <!--</p:commandButton>-->
+                        <!--</p:column>-->
+
+                        <p:column>
+                            <p:cellEditor>
+                                <f:facet name="output">
+                                        <h:outputText id="inputContractorToSwitchContractorTo" value="#{financial_item.contractorTo.nameShort}"/>
+                                </f:facet>
+                                <f:facet name="input">
+                                    <p:outputPanel id="panelChangeContractorToView">
+                                    <ui:param name="pd" value="#{financialItemController.getSwitchParameter()}" />
+                                    <p:outputPanel rendered="#{pd==1}">
+                                    <table width="100%" border="0" cellpadding="0" cellspacing="0">
+                                        <tr>
+                                            <td><p:inputText style="width:98%;padding: 0" styleClass="field_readonly" id="contractor_to_id" readonly="true" value="#{financial_item.contractorTo.nameShort!=null ? financial_item.contractorTo.nameShort : ''}"/></td>
+                                            <td style="width: 30px;" align="right">
+                                                <p:commandButton style="width:30px;" process="@this" actionListener="#{financialItemController.updateFinancialItemForContractorChoose(financial_item)}" update="form_edit_contractorsTo" icon="fa fa-list-ul" onsuccess="PF('dlg_contractorTo_choice').show();"/>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                    </p:outputPanel>
+                                    <p:outputPanel rendered="#{pd==0}">
+                                        <h:outputText value="#{financial_item.contractorTo.nameShort}"/>
+                                    </p:outputPanel>
+                                    </p:outputPanel>
+                                </f:facet>
+                            </p:cellEditor>
+                        </p:column>
+
+                        <p:column >
+                            <p:cellEditor>
+                                <f:facet name="output">
+                                    <h:outputText value="#{financial_item.date}">
+                                        <f:convertDateTime pattern="dd.MM.yyyy" locale="ru_RU" />
+                                    </h:outputText>
+                                </f:facet>
+                                <f:facet name="input">
+                                    <p:calendar id="created_date" size="11" value="#{financial_item.date}" pattern="dd.MM.yyyy" locale="ru" />
+                                </f:facet>
+                            </p:cellEditor>
+                        </p:column>
+
+                        <p:column >
+                            <p:rowToggler id="toggler_InPaymentWay"/>
+                        </p:column>
+
+                        <p:column >
+                            <p:cellEditor>
+                                <f:facet name="output">
+                                    <h:outputText value="#{financial_item.description}" />
+                                </f:facet>
+                                <f:facet name="input">
+                                    <p:inputText value="#{financial_item.description}" style="width:98%" />
+                                </f:facet>
+                            </p:cellEditor>
+                        </p:column>
+
+                        <p:column >
+                            <p:cellEditor>
+                                <f:facet name="output">
+
+                                    <ui:param name="pd" value="#{financialItemService.differenceBetweenOverallSumAndSumOfInPaymentWays(financial_item.sum,financialItemService.calculateSum(financial_item.getInPaymentWayList()))}" />
+
+                                    <p:outputPanel style="color: #FF9E9E; font-weight: bold;" rendered="#{pd==1}">
+                                        <h:outputText value="#{financial_item.sum}" style="text-align: right; float:right; width:95%;">
+                                            <f:convertNumber minIntegerDigits="1" minFractionDigits="2" groupingUsed="true" />
+                                        </h:outputText>
+                                    </p:outputPanel>
+                                    <p:outputPanel rendered="#{pd==0}">
+                                        <h:outputText id="overall_sum_for_financialItem" value="#{financialItemService.calculateSum(financial_item.getInPaymentWayList())}" style="text-align: right; float:right; width:95%;">
+                                            <f:convertNumber minIntegerDigits="1" minFractionDigits="2" groupingUsed="true" />
+                                        </h:outputText>
+                                    </p:outputPanel>
+                                </f:facet>
+                                <f:facet name="input">
+                                    <p:inputText value="#{financial_item.sum}" style="text-align: right; width:88%;" >
+                                        <f:convertNumber minIntegerDigits="1" minFractionDigits="2" groupingUsed="true" />
+                                    </p:inputText>
+                                </f:facet>
+                            </p:cellEditor>
+                        </p:column>
+
+                        <p:column >
+
+                        </p:column>
+
+                        <p:column>
+
+                        </p:column>
+
+
+
+                        <p:columnGroup type="footer">
+                            <p:row>
+                                <p:column colspan="6" style="text-align:right">
+                                    <f:facet name="footer">
+                                        <h:outputText value="Итого:"/>
+                                    </f:facet>
+                                </p:column>
+
+                                <p:column>
+                                    <f:facet name="footer">
+                                        <p:outputPanel id="totalField">
+                                        <ui:param name="pd" value="#{financialItemController.getSwitchParameter()}" />
+                                        <p:outputPanel rendered="#{pd==1}">
+                                            <h:outputText rendered="#{financialItemBackingBean.contractorFromForFilter!=null and financialItemBackingBean.contractorToForFilter!=null}"
+                                                          value="#{financialItemService.sum(financialItemService.findDebitOrCreditWhenChoosenContractor(null,null,financialItemBackingBean.contractorFromForFilter,
+                financialItemBackingBean.contractorToForFilter,contractorModelBean.selectedContractor),financialItemService.findDebitOrCreditWhenChoosenContractor(null,null,financialItemBackingBean.contractorToForFilter,
+                financialItemBackingBean.contractorFromForFilter,contractorModelBean.selectedContractor))}">
+                                                <f:convertNumber minIntegerDigits="1" minFractionDigits="2" groupingUsed="true" />
+                                            </h:outputText>
+                                        </p:outputPanel>
+                                        <p:outputPanel rendered="#{pd==0}">
+                                            <h:outputText rendered="#{financialItemBackingBean.contractorFromForFilter!=null and financialItemBackingBean.contractorToForFilter!=null}"
+                                                          value="#{financialItemService.sum(financialItemService.findDebitOrCreditWhenChoosenContractor(null,null,financialItemBackingBean.contractorToForFilter,
+                financialItemBackingBean.contractorFromForFilter,contractorModelBean.selectedContractor),financialItemService.findDebitOrCreditWhenChoosenContractor(null,null,financialItemBackingBean.contractorFromForFilter,
+                financialItemBackingBean.contractorToForFilter,contractorModelBean.selectedContractor))}">
+                                                <f:convertNumber minIntegerDigits="1" minFractionDigits="2" groupingUsed="true" />
+                                            </h:outputText>
+                                        </p:outputPanel>
+                                        </p:outputPanel>
+                                    </f:facet>
+                                </p:column>
+
+                                <p:column>
+                                    <f:facet name="footer">
+                                        <p:outputPanel id="creditField">
+                                        <ui:param name="pd" value="#{financialItemController.getSwitchParameter()}" />
+                                        <p:outputPanel rendered="#{pd==1}">
+                                            <h:outputText rendered="#{financialItemBackingBean.contractorFromForFilter!=null and financialItemBackingBean.contractorToForFilter!=null}"
+                                                          value="#{financialItemService.findDebitOrCreditWhenChoosenContractor(null,null,financialItemBackingBean.contractorFromForFilter,
+                financialItemBackingBean.contractorToForFilter,contractorModelBean.selectedContractor)}">
+                                                <f:convertNumber minIntegerDigits="1" minFractionDigits="2" groupingUsed="true" />
+                                            </h:outputText>
+                                        </p:outputPanel>
+                                        <p:outputPanel rendered="#{pd==0}">
+                                            <h:outputText rendered="#{financialItemBackingBean.contractorFromForFilter!=null and financialItemBackingBean.contractorToForFilter!=null}"
+                                                          value="#{financialItemService.findDebitOrCreditWhenChoosenContractor(null,null,financialItemBackingBean.contractorToForFilter,
+                financialItemBackingBean.contractorFromForFilter,contractorModelBean.selectedContractor)}">
+                                                <f:convertNumber minIntegerDigits="1" minFractionDigits="2" groupingUsed="true" />
+                                            </h:outputText>
+                                        </p:outputPanel>
+                                        </p:outputPanel>
+                                    </f:facet>
+                                </p:column>
+
+
+                                <p:column>
+                                    <f:facet name="footer">
+                                        <p:outputPanel id="debitField">
+                                        <ui:param name="pd" value="#{financialItemController.getSwitchParameter()}" />
+                                        <p:outputPanel rendered="#{pd==1}">
+                                            <h:outputText rendered="#{financialItemBackingBean.contractorFromForFilter!=null and financialItemBackingBean.contractorToForFilter!=null}"
+                                                          value="#{financialItemService.findDebitOrCreditWhenChoosenContractor(null,null,financialItemBackingBean.contractorToForFilter,
+                financialItemBackingBean.contractorFromForFilter,contractorModelBean.selectedContractor)}">
+                                                <f:convertNumber minIntegerDigits="1" minFractionDigits="2" groupingUsed="true" />
+                                            </h:outputText>
+                                        </p:outputPanel>
+                                        <p:outputPanel rendered="#{pd==0}">
+                                            <h:outputText rendered="#{financialItemBackingBean.contractorFromForFilter!=null and financialItemBackingBean.contractorToForFilter!=null}"
+                                                          value="#{financialItemService.findDebitOrCreditWhenChoosenContractor(null,null,financialItemBackingBean.contractorFromForFilter,
+                financialItemBackingBean.contractorToForFilter,contractorModelBean.selectedContractor)}">
+                                                <f:convertNumber minIntegerDigits="1" minFractionDigits="2" groupingUsed="true" />
+                                            </h:outputText>
+                                        </p:outputPanel>
+                                        </p:outputPanel>
+                                    </f:facet>
+                                </p:column>
+                            </p:row>
+                        </p:columnGroup>
+
+                        <p:rowExpansion id="row_expension_inPaymentWay">
+                            <h:form id="form_product_type_choice">
+                                <p:menubar id="menubar_product_types" rendered="#{loginController.hasAccessTo(enumBean.modelFinancialItem, enumBean.accessView) or loginController.hasAccessTo(enumBean.modelFinancialItem, enumBean.accessEdit)}">
+                                    <p:menuitem value="Добавить" process="@this" actionListener="#{financialItemController.addNewInPayment}" icon="fa fa-plus-circle fa-fw fa-fvm" onclick="PF('dlg_inPaymentWay').show();" update="form_add_inPaymentWay"/>
+                                    <p:menuitem value="Удалить" icon="fa fa-times-circle fa-fw fa-fvm" onclick="PF('dlg_delete_goodKind').show();" update="form_goodKind_delete" disabled="#{financialItemBackingBean.selectedInPaymentWay==null or edit_readOnly}"/>
+                                </p:menubar>
+                                <p:dataTable id="table_product_types" var="inPaymenWay" value="#{financial_item.inPaymentWayList}" selectionMode="single" selection="#{financialItemBackingBean.selectedInPaymentWay}" editable="true" editMode="cell" rowKey="#{inPaymenWay}" emptyMessage="Не найдено">
+
+                                    <p:ajax event="rowSelect"  update=":form_shipment_base_choice:table_shipment_bases:form_product_type_choice:menubar_product_types" />
+                                    <p:ajax event="rowUnselect" update=":form_shipment_base_choice:table_shipment_bases:form_product_type_choice:menubar_product_types" />
+                                    <p:ajax event="cellEdit" listener="#{financialItemController.onCellEditInPaymentWay}" update="table_product_types :form_shipment_base_choice:table_shipment_bases:overall_sum_for_financialItem" />
+                                    <!--<p:ajax event="rowEditCancel" listener="#{financialItemController.onRowCancelInPaymentWay}" update="table_product_types" />-->
+
+                                    <p:column style="width:30px;" headerText="#{msgs['inpaymentWay.id']}"  priority="1">
+                                        <h:outputText value="#{inPaymenWay.id}" />
+                                    </p:column>
+
+                                    <p:column headerText="#{msgs['inpaymentWay.objectType']}" style="width:180px; white-space: nowrap;">
+                                        <p:cellEditor style="text-align: right;">
+
+                                            <f:facet name="output">
+                                                <h:outputText value="#{msgs['inpaymentWay.type.drive']}" rendered="#{inPaymenWay.objectType==1}" />
+                                                <h:outputText value="#{msgs['inpaymentWay.type.debt']}" rendered="#{inPaymenWay.objectType==2}" />
+                                                <h:outputText value="#{msgs['inpaymentWay.type.advance']}" rendered="#{inPaymenWay.objectType==3}" />
+                                                <h:outputText value="#{msgs['inpaymentWay.type.request']}" rendered="#{inPaymenWay.objectType==4}" />
+                                                <h:outputText value="#{msgs['inpaymentWay.type.oil']}" rendered="#{inPaymenWay.objectType==5}" />
+                                            </f:facet>
+                                            <f:facet name="input">
+                                                <p:selectOneMenu panelStyle="width:70px;" style="width:98%" value="#{inPaymenWay.objectType}" required="false">
+                                                    <f:selectItem itemLabel="#{msgs['inpaymentWay.type.debt']}" itemValue="2" />
+                                                    <f:selectItem itemLabel="#{msgs['inpaymentWay.type.drive']}" itemValue="1" />
+                                                    <f:selectItem itemLabel="#{msgs['inpaymentWay.type.advance']}" itemValue="3" />
+                                                    <f:selectItem itemLabel="#{msgs['inpaymentWay.type.request']}" itemValue="4" />
+                                                    <f:selectItem itemLabel="#{msgs['inpaymentWay.type.oil']}" itemValue="5" />
+                                                </p:selectOneMenu>
+                                            </f:facet>
+                                        </p:cellEditor>
+                                    </p:column>
+
+                                    <p:column headerText="#{msgs['inpaymentWay.objectLink']}">
+                                        <p:cellEditor>
+                                            <f:facet name="output">
+                                                <h:outputText value="#{inPaymenWay.objectLink}" />
+                                            </f:facet>
+                                            <f:facet name="input">
+                                                <p:inputText value="#{inPaymenWay.objectLink}" style="width:98%" />
+                                            </f:facet>
+                                        </p:cellEditor>
+                                    </p:column>
+
+                                    <p:column headerText="#{msgs['inpaymentWay.sum']}" style="width:100px; white-space: nowrap;">
+                                        <p:cellEditor style="text-align: right;">
+                                            <f:facet name="output">
+                                                <h:outputText value="#{inPaymenWay.sum}" style="text-align: right; float:right; width:95%;">
+                                                    <f:convertNumber minIntegerDigits="1" minFractionDigits="2" groupingUsed="true" />
+                                                </h:outputText>
+                                            </f:facet>
+                                            <f:facet name="input">
+                                                <p:inputText value="#{inPaymenWay.sum}" style="text-align: right; width:88%;">
+                                                    <f:convertNumber minIntegerDigits="1" minFractionDigits="2" groupingUsed="true" />
+                                                </p:inputText>
+                                            </f:facet>
+                                        </p:cellEditor>
+                                    </p:column>
+
+                                    <p:column headerText="#{msgs['inpaymentWay.description']}" style="width:100px;">
+                                        <p:cellEditor>
+                                            <f:facet name="output">
+                                                <h:outputText value="#{inPaymenWay.description}" />
+                                            </f:facet>
+                                            <f:facet name="input">
+                                                <p:inputText value="#{inPaymenWay.description}" style="width:98%" />
+                                            </f:facet>
+                                        </p:cellEditor>
+                                    </p:column>
+
+                                    <!--<p:column style="width:30px; text-align: center; float:center" rendered="#{loginController.hasAccessTo(enumBean.modelBases, enumBean.accessEdit)}">-->
+                                    <!--<f:facet name="header">-->
+                                    <!--<i class="fa fa-edit" />-->
+                                    <!--</f:facet>-->
+                                    <!--<p:rowEditor style="text-align: center; float:center" />-->
+                                    <!--</p:column>-->
+                                </p:dataTable>
+                            </h:form>
+                        </p:rowExpansion>
+
+                    </p:dataTable>
+
+                    <p:contextMenu for="table_shipment_bases">
+                        <p:menuitem value="#{msgs['financialItem.active']}" update="form_active_financialItem" icon="ui-icon-check" oncomplete="PF('dlg_active_financialItem').show()"/>
+                        <p:menuitem value="#{msgs['financialItem.notActive']}" update="form_inactive_financialItem" icon="ui-icon-close" oncomplete="PF('dlg_inactive_financialItem').show()"/>
+                    </p:contextMenu>
+
+                </h:form>
+            </p:outputPanel>
+            <p:outputPanel rendered="#{!loginController.hasAccessTo(enumBean.modelFinancialItem, enumBean.accessView)}">
+                <ui:include src="disallowpage.xhtml" />
+            </p:outputPanel>
+        </ui:define>
+    </ui:composition>
+</h:body>
+</html>
+

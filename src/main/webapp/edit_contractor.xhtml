@@ -1,0 +1,802 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+		"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:c="http://java.sun.com/jsp/jstl/core" xmlns:h="http://java.sun.com/jsf/html" xmlns:f="http://java.sun.com/jsf/core" xmlns:ui="http://java.sun.com/jsf/facelets" xmlns:p="http://primefaces.org/ui">
+<h:body>
+	<ui:composition template="/layout/forcab.xhtml">
+		<ui:define name="windowTitle">#{msgs['edit_contractor.title']}</ui:define>
+		<ui:define name="content">
+			<script type="text/javascript">
+                function reloadPage() {
+                    location.reload();
+                }
+			</script>
+
+			<ui:param name="canEditSelectedContractor" value="#{loginController.hasAccessTo(enumBean.modelContractor, enumBean.accessEdit) or loginController.isContractorSubordinateOfUser(contractorBackingBean.selectedContractor)}" />
+
+			<ui:param name="contCurrentRequisites" value="#{contractorService.getCurrentRequisite(contractorBackingBean.selectedContractor.requisitesList)}" />
+			<ui:param name="defBankAccount" value="#{contractorService.getDefaultBankAccount(contractorBackingBean.selectedContractor)}" />
+
+			<h:form id="form_requisites_delete">
+				<p:growl id="growlRequisite" showDetail="true"/>
+				<p:dialog id="dialog_delete_requisites" header="Удаление реквизитов" widgetVar="dlg_delete_requisites" resizable="false" modal="true" draggable="false" showEffect="fade" hideEffect="explode">
+					<h:panelGrid columns="1" cellpadding="5" style="width: 100%;">
+						<h:outputLabel value="Удалить ? :" />
+						<h:outputLabel id="label_deleteRequisites" value="Реквизиты от #{contractorBackingBean.selectedRequisite.validFrom}, Идент: #{contractorBackingBean.selectedRequisite.id}" />
+						<h:panelGrid columns="2" cellpadding="5" style="margin: 0 auto;">
+							<p:commandButton icon="fa fa-times-circle fa-fw fa-fvm" value="Удалить" update="growlRequisite :form_contractor_edit:reqs :form_contractor_edit:req_fields" actionListener="#{contractorController.buttonActionRemoveRequisite}" oncomplete="PF('dlg_delete_requisites').hide();" />
+							<p:commandButton value="Отмена" onclick="PF('dlg_delete_requisites').hide();" />
+						</h:panelGrid>
+					</h:panelGrid>
+				</p:dialog>
+			</h:form>
+
+			<h:form id="form_bankaccount_delete">
+				<p:growl id="growlBankAccount" showDetail="true"/>
+				<p:dialog id="dialog_delete_bankaccount" header="Удаление информации о банковском счёте" widgetVar="dlg_delete_bankaccount" resizable="false" modal="true" draggable="false" showEffect="fade" hideEffect="explode">
+					<h:panelGrid columns="1" cellpadding="5" style="width: 100%;">
+						<h:outputLabel value="Удалить ? :" />
+						<h:outputLabel id="label_deleteBankAccount" value="Счёт Идент: #{contractorBackingBean.selectedBankAccount.id}" />
+						<h:panelGrid columns="2" cellpadding="5" style="margin: 0 auto;">
+							<p:commandButton icon="fa fa-times-circle fa-fw fa-fvm" value="Удалить" update="growlBankAccount :form_contractor_edit:bacs :form_contractor_edit:bac_fields" actionListener="#{contractorController.buttonActionRemoveBankAccount}" oncomplete="PF('dlg_delete_bankaccount').hide();" />
+							<p:commandButton value="Отмена" onclick="PF('dlg_delete_bankaccount').hide();" />
+						</h:panelGrid>
+					</h:panelGrid>
+				</p:dialog>
+			</h:form>
+
+			<h:form id="form_contractor_edit">
+
+				<p:panelGrid styleClass="ui-noborder" style="width: 100%">
+					<p:row>
+						<p:column style="width:150px;">
+							<p:outputLabel value="Клиент:" />
+						</p:column>
+						<p:column colspan="4">
+							<p:outputLabel styleClass="field_readonly" value="#{contractorBackingBean.selectedContractor.customer.title}" rendered="#{contractorBackingBean.selectedContractor.customer!=null}" />
+							<p:outputLabel styleClass="field_readonly" value="[Нет]" rendered="#{contractorBackingBean.selectedContractor.customer==null}" />
+						</p:column>
+						<p:column />
+					</p:row>
+					<p:row>
+						<p:column style="width:150px;">
+							<p:outputLabel value="#{msgs['contractor.kind']}" />
+						</p:column>
+						<p:column colspan="4">
+							<p:selectOneMenu id="contractorOrganizationTypeChoice" value="#{contractorBackingBean.selectedContractor.organizationType}" disabled="#{!canEditSelectedContractor}" converter="organizationTypeConverter" required="true">
+								<c:if test="#{contractorBackingBean.selectedContractor.organizationType == null}">
+									<f:selectItem itemLabel="#{msgs['value.null']}" itemValue="#{null}" itemDisabled="#{contractorBackingBean.selectedContractor.organizationType != null}" />
+								</c:if>
+								<f:selectItems itemDisabled="#{!canEditSelectedContractor}" value="#{contractorModelBean.contractorOrganizationTypeList}" var="organizationType" itemLabel="#{organizationType.nameFull}" itemValue="#{organizationType}" />
+								<p:ajax event="change" update=":form_contractor_edit:req_mainTab" />
+							</p:selectOneMenu>
+						</p:column>
+						<p:column style="float:right;">
+							<p:panelGrid styleClass="ui-noborder" columns="2">
+								<p:outputLabel value="#{msgs['contractor.contractorId']}" />
+								<p:outputLabel value="#{contractorBackingBean.selectedContractor.id}" style="text-align: right;" />
+							</p:panelGrid>
+						</p:column>
+					</p:row>
+					<p:row>
+						<p:column style="width:150px;">
+							<p:outputLabel value="#{msgs['contractor.nameWork']}" />
+						</p:column>
+						<p:column colspan="4">
+							<p:inputText value="#{contractorBackingBean.selectedContractor.nameWork}" style="width:566px" disabled="#{!canEditSelectedContractor}" />
+						</p:column>
+						<p:column>
+						</p:column>
+					</p:row>
+					<p:row>
+						<p:column style="width:150px;">
+							<p:outputLabel value="#{msgs['contractor.nameShort']}" />
+						</p:column>
+						<p:column colspan="4">
+							<p:inputText value="#{contractorBackingBean.selectedContractor.nameShort}" style="width:566px" disabled="#{!canEditSelectedContractor}" />
+						</p:column>
+						<p:column>
+						</p:column>
+					</p:row>
+					<p:row>
+						<p:column>
+							<p:outputLabel value="#{msgs['contractor.nameFull']}" />
+						</p:column>
+						<p:column colspan="4">
+							<p:inputText value="#{contractorBackingBean.selectedContractor.nameFull}" style="width:800px" disabled="#{!canEditSelectedContractor}" />
+						</p:column>
+						<p:column/>
+					</p:row>
+					<p:row>
+						<p:column>
+							<p:outputLabel value="#{msgs['contractor.INN']}" />
+						</p:column>
+						<p:column style="width:150px;">
+							<p:outputLabel value="#{contractorBackingBean.selectedContractor.inn}"/>
+							<p:inputText value="#{contractorBackingBean.selectedContractor.inn}" disabled="#{!canEditSelectedContractor}" rendered="#{contractorBackingBean.selectedContractor.inn==null or contractorBackingBean.selectedContractor.inn==''}"/>
+						</p:column>
+						<p:column style="width:10px;"/>
+						<p:column style="width:150px;">
+							<p:outputLabel value="#{msgs['contractor.KPP']}" />
+						</p:column>
+						<p:column>
+							<p:inputText value="#{contractorBackingBean.selectedContractor.kpp}" disabled="#{!canEditSelectedContractor}" />
+						</p:column>
+						<p:column/>
+					</p:row>
+					<p:row>
+						<p:column>
+							<p:outputLabel value="#{msgs['contractor.OKPO']}" />
+						</p:column>
+						<p:column>
+							<p:inputText value="#{contractorBackingBean.selectedContractor.okpo}" disabled="#{!canEditSelectedContractor}" />
+						</p:column>
+						<p:column/>
+						<p:column>
+							<p:outputLabel value="#{msgs['contractor.OGRN']}" />
+						</p:column>
+						<p:column>
+							<p:inputText value="#{contractorBackingBean.selectedContractor.ogrn}" disabled="#{!canEditSelectedContractor}" />
+						</p:column>
+						<p:column/>
+					</p:row>
+					<p:row>
+						<p:column>
+							<p:outputLabel value="#{msgs['contractor.OKATO']}" />
+						</p:column>
+						<p:column>
+							<p:inputText value="#{contractorBackingBean.selectedContractor.okato}" disabled="#{!canEditSelectedContractor}" />
+						</p:column>
+						<p:column/>
+						<p:column/>
+						<p:column/>
+						<p:column/>
+					</p:row>
+					<p:row>
+						<p:column colspan="7">
+							<b><p:separator /> <p:outputLabel value="#{msgs['contractor.contacts']}" /> <i class="fa fa-angle-double-down" /></b>
+						</p:column>
+					</p:row>
+					<p:row>
+						<p:column style="width:150px;">
+							<p:outputLabel value="#{msgs['contractor.relTel']}" />
+						</p:column>
+						<p:column>
+							<p:inputText value="#{contractorBackingBean.selectedContractor.phone}" disabled="#{!canEditSelectedContractor}" />
+						</p:column>
+						<p:column>
+						</p:column>
+						<p:column style="width:150px;">
+							<p:outputLabel value="#{msgs['contractor.relFax']}" />
+						</p:column>
+						<p:column>
+							<p:inputText value="#{contractorBackingBean.selectedContractor.fax}" disabled="#{!canEditSelectedContractor}" />
+						</p:column>
+						<p:column>
+						</p:column>
+					</p:row>
+					<p:row>
+						<p:column style="width:150px;">
+							<p:outputLabel value="#{msgs['contractor.relEmail']}" />
+						</p:column>
+						<p:column>
+							<p:inputText value="#{contractorBackingBean.selectedContractor.email}" disabled="#{!canEditSelectedContractor}" />
+						</p:column>
+						<p:column>
+						</p:column>
+						<p:column style="width:150px;">
+							<p:outputLabel value="#{msgs['contractor.relWww']}" />
+						</p:column>
+						<p:column>
+							<p:inputText value="#{contractorBackingBean.selectedContractor.www}" disabled="#{!canEditSelectedContractor}" />
+						</p:column>
+						<p:column>
+						</p:column>
+					</p:row>
+					<p:row>
+						<p:column style="width:150px;">
+							<p:outputLabel value="#{msgs['contractor.description']}" />
+						</p:column>
+						<p:column colspan="4">
+							<p:inputTextarea rows="2" style="width:566px" value="#{contractorBackingBean.selectedContractor.description}" disabled="#{!canEditSelectedContractor}" />
+						</p:column>
+						<p:column>
+						</p:column>
+					</p:row>
+				</p:panelGrid>
+
+				<p:panelGrid styleClass="ui-noborder" style="width: 100%">
+					<p:row>
+						<p:column colspan="2">
+							<b><p:separator /> <p:outputLabel value="#{msgs['requisites']}" /> <i class="fa fa-angle-double-down" /></b>
+						</p:column>
+					</p:row>
+					<p:row>
+						<p:column style="width:150px; vertical-align: top;">
+							<p:toolbar rendered="#{canEditSelectedContractor}">
+								<f:facet name="left">
+									<p:commandButton icon="fa fa-plus" update="reqs :form_contractor_edit:req_fields" title="Добавить реквизиты" actionListener="#{contractorController.buttonActionNewRequisite}" disabled="#{!canEditSelectedContractor}" />
+									<p:spacer />
+									<p:commandButton icon="fa fa-close" update="reqs" title="Удалить реквизиты" onclick="PF('dlg_delete_requisites').show();" disabled="#{!canEditSelectedContractor}" />
+								</f:facet>
+							</p:toolbar>
+							<div style="height: 5px;" />
+							<p:remoteCommand name="rc" actionListener="#{contractorController.updateRequisite}" update="req_fields :form_requisites_delete:dialog_delete_requisites reqs" />
+							<p:selectOneListbox id="reqs" value="#{contractorBackingBean.selectedRequisite}" converter="requisiteConverter" var="r" style="width:400px;">
+								<p:ajax onsuccess="rc()"/>
+								<f:selectItems value="#{contractorBackingBean.selectedContractor.requisitesList}" var="req" itemLabel="#{req.id}" itemValue="#{req}" />
+								<p:column>
+									<h:panelGrid columns="2" width="40">
+										<p:outputPanel style="text-align: center; color: green; width: 20px;" rendered="#{r.active}">
+											<i class="fa fa-toggle-on" title="#{msgs['requisites.active.true']}" />
+										</p:outputPanel>
+										<p:outputPanel style="text-align: center; color: red; width: 20px;" rendered="#{!r.active}">
+											<i class="fa fa-toggle-off" title="#{msgs['requisites.active.false']}" />
+										</p:outputPanel>
+										<p:outputPanel style="text-align: center; color: green; width: 20px;" rendered="#{r == contCurrentRequisites}">
+											<i class="fa fa-check" title="#{msgs['requisites.current.ok']}" />
+										</p:outputPanel>
+										<p:outputPanel style="text-align: center; color: red; width: 20px;" rendered="#{r != contCurrentRequisites}">
+											<i class="fa fa-clock-o" title="#{msgs['requisites.current.no']}" />
+										</p:outputPanel>
+									</h:panelGrid>
+								</p:column>
+								<p:column>
+									<p:outputPanel style="float:center; text-align: center; width: 170px; max-width: 170px; min-width: 170px; overflow: hidden;">
+										<h:outputText value="#{r.validFrom}">
+											<f:convertDateTime pattern="dd.MM.yyyy" locale="ru_RU" />
+										</h:outputText>
+									</p:outputPanel>
+								</p:column>
+								<p:column>
+									<p:outputPanel style="float: center; text-align: center; width: 170px; max-width: 170px; min-width: 170px; overflow: hidden;">
+										<h:outputText value="#{r.validTo}" rendered="#{r.validTo != null}">
+											<f:convertDateTime pattern="dd.MM.yyyy" locale="ru_RU" />
+										</h:outputText>
+										<p:outputPanel style="text-align: center; color: green;" rendered="#{r.validTo == null}">
+											<i class="fa fa-clock-o" />
+										</p:outputPanel>
+									</p:outputPanel>
+								</p:column>
+							</p:selectOneListbox>
+						</p:column>
+						<p:column style="float:left;">
+							<p:panelGrid id="req_fields" columns="1" styleClass="ui-noborder">
+								<p:panelGrid columns="6" styleClass="ui-noborder">
+									<p:outputLabel for="req_active" value="#{msgs['requisites.active']}"/>
+									<p:selectBooleanCheckbox id="req_active" value="#{contractorBackingBean.editSelectedRequisite.active}" disabled="#{!canEditSelectedContractor}" />
+									<p:outputLabel value="#{msgs['requisites.dateValidity']}"/>
+									<p:calendar value="#{contractorBackingBean.editSelectedRequisite.validFrom}" disabled="#{false}" pattern="dd.MM.yyyy" showOn="button" locale="ru" readonly="#{!canEditSelectedContractor}" />
+									<p:outputLabel value="#{msgs['requisites.periodToValidity']}"/>
+									<p:calendar value="#{contractorBackingBean.editSelectedRequisite.validTo}" disabled="#{false}" pattern="dd.MM.yyyy" showOn="button" locale="ru" readonly="#{!canEditSelectedContractor}" />
+								</p:panelGrid>
+								<p:tabView id="req_mainTab" dynamic="true" cache="true">
+									<p:tab title="#{msgs['requisites.manager']}">
+										<p:panelGrid styleClass="ui-noborder">
+											<p:row>
+												<p:column style="width:180px">
+													<p:outputLabel value="#{msgs['requisites.managerPost']}" />
+												</p:column>
+												<p:column>
+													<p:inputText value="#{contractorBackingBean.editSelectedRequisite.managerPost}" readonly="#{!canEditSelectedContractor}" />
+												</p:column>
+												<p:column style="width:99px">
+													<p:outputLabel value="#{msgs['requisites.postgen']}" />
+												</p:column>
+												<p:column>
+													<p:inputText value="#{contractorBackingBean.editSelectedRequisite.managerPostGen}" readonly="#{!canEditSelectedContractor}" />
+												</p:column>
+											</p:row>
+											<p:row>
+												<p:column>
+													<p:outputLabel value="#{msgs['requisites.managerName']}" />
+												</p:column>
+												<p:column>
+													<p:inputText value="#{contractorBackingBean.editSelectedRequisite.managerNameShort}" readonly="#{!canEditSelectedContractor}" />
+												</p:column>
+												<p:column>
+													<p:outputLabel value="#{msgs['requisites.postgen']}" />
+												</p:column>
+												<p:column>
+													<p:inputText value="#{contractorBackingBean.editSelectedRequisite.managerNameShortGen}" readonly="#{!canEditSelectedContractor}" />
+												</p:column>
+											</p:row>
+											<p:row>
+												<p:column>
+													<p:outputLabel value="#{msgs['requisites.managerNameFull']}" />
+												</p:column>
+												<p:column colspan="3">
+													<p:inputText style="width:485px" value="#{contractorBackingBean.editSelectedRequisite.managerNameFull}" readonly="#{!canEditSelectedContractor}" />
+												</p:column>
+											</p:row>
+											<p:row>
+												<p:column>
+													<p:outputLabel value="#{msgs['requisites.managerNameFullGen']}" />
+												</p:column>
+												<p:column colspan="3">
+													<p:inputText style="width:485px" value="#{contractorBackingBean.editSelectedRequisite.managerNameFullGen}" readonly="#{!canEditSelectedContractor}" />
+												</p:column>
+											</p:row>
+											<p:row>
+												<p:column>
+													<p:outputLabel value="#{msgs['requisites.managerDoCondition']}" />
+												</p:column>
+												<p:column colspan="3">
+													<p:inputText style="width:485px" value="#{contractorBackingBean.editSelectedRequisite.managerDocReference}" readonly="#{!canEditSelectedContractor}" />
+												</p:column>
+											</p:row>
+											<p:row>
+												<p:column>
+													<p:outputLabel value="#{msgs['requisites.managerDescription']}" />
+												</p:column>
+												<p:column colspan="3">
+													<p:inputTextarea rows="2" style="width:485px" value="#{contractorBackingBean.editSelectedRequisite.managerDescription}" readonly="#{!canEditSelectedContractor}" />
+												</p:column>
+											</p:row>
+										</p:panelGrid>
+									</p:tab>
+									<p:tab title="#{msgs['requisites.document']}" rendered="#{contractorBackingBean.selectedContractor.organizationType.id == 2}">
+										<p:panelGrid styleClass="ui-noborder">
+											<p:row>
+												<p:column style="width:180px">
+													<p:outputLabel value="#{msgs['requisites.docKind']}" />
+												</p:column>
+												<p:column>
+													<p:selectOneMenu style="width:176px" value="#{contractorBackingBean.editSelectedRequisite.docKind}" readonly="#{!canEditSelectedContractor}">
+														<f:selectItem itemLabel="Паспорт" itemValue="#{1}" />
+													</p:selectOneMenu>
+												</p:column>
+												<p:column/>
+												<p:column/>
+											</p:row>
+											<p:row>
+												<p:column>
+													<p:outputLabel value="#{msgs['requisites.docSerial']} / #{msgs['requisites.docNumber']}" />
+												</p:column>
+												<p:column>
+													<p:inputText value="#{contractorBackingBean.editSelectedRequisite.docSerial}" style="width:50px;" readonly="#{!canEditSelectedContractor}" />&nbsp;
+													<p:inputText value="#{contractorBackingBean.editSelectedRequisite.docNumber}" style="width:100px;" readonly="#{!canEditSelectedContractor}" />
+												</p:column>
+												<p:column>
+													<p:outputLabel value="#{msgs['requisites.docDateGived']}" />
+												</p:column>
+												<p:column style="float:right">
+													<p:calendar value="#{contractorBackingBean.editSelectedRequisite.validFrom}" disabled="#{!canEditSelectedContractor}" pattern="dd.MM.yyyy" showOn="button" showButtonPanel="true" locale="ru" readonly="#{!canEditSelectedContractor}" />
+												</p:column>
+											</p:row>
+											<p:row>
+												<p:column>
+													<p:outputLabel value="#{msgs['requisites.docWhoGived']}" />
+												</p:column>
+												<p:column colspan="3">
+													<p:inputText value="#{contractorBackingBean.editSelectedRequisite.docGivenFrom}" style="width:552px;" readonly="#{!canEditSelectedContractor}" />
+												</p:column>
+											</p:row>
+											<p:row>
+												<p:column>
+													<p:outputLabel value="#{msgs['requisites.docCode']}" />
+												</p:column>
+												<p:column>
+													<p:inputText value="#{contractorBackingBean.editSelectedRequisite.docDepartmentCode}" readonly="#{!canEditSelectedContractor}" />
+												</p:column>
+												<p:column/>
+												<p:column/>
+											</p:row>
+											<p:row>
+												<p:column>
+													<p:outputLabel value="#{msgs['requisites.docDescription']}" />
+												</p:column>
+												<p:column colspan="3">
+													<p:inputTextarea rows="2" value="#{contractorBackingBean.editSelectedRequisite.docDescription}" style="width:552px;" readonly="#{!canEditSelectedContractor}" />
+												</p:column>
+											</p:row>
+										</p:panelGrid>
+									</p:tab>
+									<p:tab title="#{msgs['requisites.addressFact']}">
+										<p:panelGrid styleClass="ui-noborder">
+											<p:row>
+												<p:column style="width:180px">
+													<p:outputLabel value="#{msgs['requisites.addressFactIndex']}" />
+												</p:column>
+												<p:column>
+													<p:inputText value="#{contractorBackingBean.editSelectedRequisite.addressFactIndex}" readonly="#{!canEditSelectedContractor}" />
+												</p:column>
+
+												<p:column>
+													<p:outputLabel value="#{msgs['requisites.addressFactPostBox']}" />
+												</p:column>
+												<p:column>
+													<p:inputText value="#{contractorBackingBean.editSelectedRequisite.addressFactPostBox}" readonly="#{!canEditSelectedContractor}" />
+												</p:column>
+											</p:row>
+											<p:row>
+												<p:column>
+													<p:outputLabel value="#{msgs['requisites.addressFactRegionCode']}" />
+												</p:column>
+												<p:column colspan="3">
+													<p:selectOneMenu id="addressFactRegionChoice" value="#{contractorBackingBean.editSelectedRequisite.addressFactRegion}" disabled="#{!canEditSelectedContractor}" converter="addressRegionConverter">
+														<c:if test="#{contractorBackingBean.editSelectedRequisite.addressFactRegion == null}">
+															<f:selectItem noSelectionOption="true" itemLabel="#{msgs['value.null']}" itemValue="#{null}" itemDisabled="#{contractorBackingBean.editSelectedRequisite.addressFactRegion != null}" />
+														</c:if>
+														<f:selectItems itemDisabled="#{!canEditSelectedContractor}" value="#{contractorModelBean.addressRegionList}" var="addressFactRegion" itemLabel="#{addressFactRegion.nameFull}" itemValue="#{addressFactRegion}" />
+													</p:selectOneMenu>
+												</p:column>
+											</p:row>
+											<p:row>
+												<p:column>
+													<p:outputLabel value="#{msgs['requisites.addressFactTownship']}" />
+												</p:column>
+												<p:column colspan="3">
+													<p:inputText value="#{contractorBackingBean.editSelectedRequisite.addressFactTownship}" readonly="#{!canEditSelectedContractor}" />
+												</p:column>
+											</p:row>
+											<p:row>
+												<p:column>
+													<p:outputLabel value="#{msgs['requisites.addressFactCity']}" />
+												</p:column>
+												<p:column colspan="3">
+													<p:inputText value="#{contractorBackingBean.editSelectedRequisite.addressFactCity}" readonly="#{!canEditSelectedContractor}" />
+												</p:column>
+											</p:row>
+											<p:row>
+												<p:column>
+													<p:outputLabel value="#{msgs['requisites.addressFactTown']}" />
+												</p:column>
+												<p:column colspan="3">
+													<p:inputText value="#{contractorBackingBean.editSelectedRequisite.addressFactTown}" readonly="#{!canEditSelectedContractor}" />
+												</p:column>
+											</p:row>
+											<p:row>
+												<p:column>
+													<p:outputLabel value="#{msgs['requisites.addressFactStreet']}" />
+												</p:column>
+												<p:column colspan="3">
+													<p:inputText value="#{contractorBackingBean.editSelectedRequisite.addressFactStreet}" readonly="#{!canEditSelectedContractor}" />
+												</p:column>
+											</p:row>
+											<p:row>
+												<p:column>
+													<p:outputLabel value="#{msgs['requisites.addressFactHouseType']}" />
+												</p:column>
+												<p:column>
+													<p:selectOneMenu id="addressFactHouseTypeChoice" value="#{contractorBackingBean.editSelectedRequisite.addressFactHouseType}" disabled="#{!canEditSelectedContractor}" converter="addressHouseTypeConverter">
+														<c:if test="#{contractorBackingBean.editSelectedRequisite.addressFactHouseType == null}">
+															<f:selectItem noSelectionOption="true" itemLabel="#{msgs['value.null']}" itemValue="#{null}" itemDisabled="#{contractorBackingBean.editSelectedRequisite.addressFactHouseType != null}" />
+														</c:if>
+														<f:selectItems itemDisabled="#{!canEditSelectedContractor}" value="#{contractorModelBean.addressHouseTypeList}" var="addressFactHouseType" itemLabel="#{addressFactHouseType.nameShort} (#{addressFactHouseType.nameFull})" itemValue="#{addressFactHouseType}" />
+													</p:selectOneMenu>
+												</p:column>
+												<p:column>
+													<p:outputLabel value="#{msgs['requisites.addressFactHouseNum']}" />
+												</p:column>
+												<p:column>
+													<p:inputText value="#{contractorBackingBean.editSelectedRequisite.addressFactHouseNumber}" readonly="#{!canEditSelectedContractor}" />
+												</p:column>
+											</p:row>
+											<p:row>
+												<p:column>
+													<p:outputLabel value="#{msgs['requisites.addressFactBuildType']}" />
+												</p:column>
+												<p:column>
+													<p:selectOneMenu id="addressFactBuildingTypeChoice" value="#{contractorBackingBean.editSelectedRequisite.addressFactBuildingType}" disabled="#{!canEditSelectedContractor}" converter="addressBuildingTypeConverter">
+														<c:if test="#{contractorBackingBean.editSelectedRequisite.addressFactBuildingType == null}">
+															<f:selectItem noSelectionOption="true" itemLabel="#{msgs['value.null']}" itemValue="#{null}" itemDisabled="#{contractorBackingBean.editSelectedRequisite.addressFactBuildingType != null}" />
+														</c:if>
+														<f:selectItems itemDisabled="#{!canEditSelectedContractor}" value="#{contractorModelBean.addressBuildingTypeList}" var="addressFactBuildingType" itemLabel="#{addressFactBuildingType.nameShort} (#{addressFactBuildingType.nameFull})" itemValue="#{addressFactBuildingType}" />
+													</p:selectOneMenu>
+												</p:column>
+												<p:column>
+													<p:outputLabel value="#{msgs['requisites.addressFactBuildNum']}" />
+												</p:column>
+												<p:column>
+													<p:inputText value="#{contractorBackingBean.editSelectedRequisite.addressFactBuildingNumber}" readonly="#{!canEditSelectedContractor}" />
+												</p:column>
+											</p:row>
+											<p:row>
+												<p:column>
+													<p:outputLabel value="#{msgs['requisites.addressFactApartamentType']}" />
+												</p:column>
+												<p:column>
+													<p:selectOneMenu id="addressFactApartmentTypeChoice" value="#{contractorBackingBean.editSelectedRequisite.addressFactApartmentType}" disabled="#{!canEditSelectedContractor}" converter="addressApartmentTypeConverter">
+														<c:if test="#{contractorBackingBean.editSelectedRequisite.addressFactApartmentType == null}">
+															<f:selectItem noSelectionOption="true" itemLabel="#{msgs['value.null']}" itemValue="#{null}" itemDisabled="#{contractorBackingBean.editSelectedRequisite.addressFactApartmentType != null}" />
+														</c:if>
+														<f:selectItems itemDisabled="#{!canEditSelectedContractor}" value="#{contractorModelBean.addressApartmentTypeList}" var="addressFactApartmentType" itemLabel="#{addressFactApartmentType.nameShort} (#{addressFactApartmentType.nameFull})" itemValue="#{addressFactApartmentType}" />
+													</p:selectOneMenu>
+												</p:column>
+												<p:column>
+													<p:outputLabel value="#{msgs['requisites.addressFactApartamentNum']}" />
+												</p:column>
+												<p:column>
+													<p:inputText value="#{contractorBackingBean.editSelectedRequisite.addressFactApartmentNumber}" readonly="#{!canEditSelectedContractor}" />
+												</p:column>
+											</p:row>
+											<p:row>
+												<p:column>
+													<p:outputLabel value="#{msgs['requisites.addressFactDescription']}" />
+												</p:column>
+												<p:column colspan="3">
+													<p:inputTextarea rows="2" style="width:485px" value="#{contractorBackingBean.editSelectedRequisite.addressFactDescription}" readonly="#{!canEditSelectedContractor}" immediate="true" />
+												</p:column>
+											</p:row>
+										</p:panelGrid>
+									</p:tab>
+									<p:tab title="#{msgs['requisites.addressLegal']}">
+										<p:panelGrid>
+											<p:row>
+												<p:column style="width:180px">
+													<p:outputLabel value="#{msgs['requisites.addressLegalEqualsFact']}" />
+												</p:column>
+												<p:column>
+													<p:selectBooleanCheckbox id="req_addressLegalEqualsFact" value="#{contractorBackingBean.editSelectedRequisite.addressLegalEqualsFact}" disabled="#{!canEditSelectedContractor}">
+														<p:ajax event="change" update="req_panel_addressLegalFields" />
+													</p:selectBooleanCheckbox>
+												</p:column>
+											</p:row>
+										</p:panelGrid>
+										<p:outputPanel id="req_panel_addressLegalFields" rendered="#{!dis_legalFields}">
+											<ui:param name="dis_legalFields" value="#{contractorBackingBean.editSelectedRequisite.addressLegalEqualsFact}" />
+											<p:panelGrid id="req_addressLegalFields" rendered="#{!dis_legalFields}">
+												<p:row>
+													<p:column style="width:180px">
+														<p:outputLabel value="#{msgs['requisites.addressLegalIndex']}" />
+													</p:column>
+													<p:column>
+														<p:inputText value="#{contractorBackingBean.editSelectedRequisite.addressLegalIndex}" disabled="#{dis_legalFields}" readonly="#{!canEditSelectedContractor}" />
+													</p:column>
+
+													<p:column>
+														<p:outputLabel value="#{msgs['requisites.addressLegalPostBox']}" />
+													</p:column>
+													<p:column>
+														<p:inputText value="#{contractorBackingBean.editSelectedRequisite.addressLegalPostBox}" disabled="#{dis_legalFields}" readonly="#{!canEditSelectedContractor}" />
+													</p:column>
+												</p:row>
+												<p:row>
+													<p:column>
+														<p:outputLabel value="#{msgs['requisites.addressLegalRegionCode']}" />
+													</p:column>
+													<p:column colspan="3">
+														<p:selectOneMenu id="addressLegalRegionChoice" value="#{contractorBackingBean.editSelectedRequisite.addressLegalRegion}" disabled="#{!canEditSelectedContractor}" converter="addressRegionConverter">
+															<c:if test="#{contractorBackingBean.editSelectedRequisite.addressLegalRegion == null}">
+																<f:selectItem noSelectionOption="true" itemLabel="#{msgs['value.null']}" itemValue="#{null}" itemDisabled="#{contractorBackingBean.editSelectedRequisite.addressLegalRegion != null}" />
+															</c:if>
+															<f:selectItems itemDisabled="#{!canEditSelectedContractor}" value="#{contractorModelBean.addressRegionList}" var="addressLegalRegion" itemLabel="#{addressLegalRegion.nameFull}" itemValue="#{addressLegalRegion}" />
+														</p:selectOneMenu>
+													</p:column>
+												</p:row>
+												<p:row>
+													<p:column>
+														<p:outputLabel value="#{msgs['requisites.addressLegalTownship']}" />
+													</p:column>
+													<p:column colspan="3">
+														<p:inputText value="#{contractorBackingBean.editSelectedRequisite.addressLegalTownship}" disabled="#{dis_legalFields}" readonly="#{!canEditSelectedContractor}" />
+													</p:column>
+												</p:row>
+												<p:row>
+													<p:column>
+														<p:outputLabel value="#{msgs['requisites.addressLegalCity']}" />
+													</p:column>
+													<p:column colspan="3">
+														<p:inputText value="#{contractorBackingBean.editSelectedRequisite.addressLegalCity}" disabled="#{dis_legalFields}" readonly="#{!canEditSelectedContractor}" />
+													</p:column>
+												</p:row>
+												<p:row>
+													<p:column>
+														<p:outputLabel value="#{msgs['requisites.addressLegalTown']}" />
+													</p:column>
+													<p:column colspan="3">
+														<p:inputText value="#{contractorBackingBean.editSelectedRequisite.addressLegalTown}" disabled="#{dis_legalFields}" readonly="#{!canEditSelectedContractor}" />
+													</p:column>
+												</p:row>
+												<p:row>
+													<p:column>
+														<p:outputLabel value="#{msgs['requisites.addressLegalStreet']}" />
+													</p:column>
+													<p:column colspan="3">
+														<p:inputText value="#{contractorBackingBean.editSelectedRequisite.addressLegalStreet}" disabled="#{dis_legalFields}" readonly="#{!canEditSelectedContractor}" />
+													</p:column>
+												</p:row>
+												<p:row>
+													<p:column>
+														<p:outputLabel value="#{msgs['requisites.addressLegalHouseType']}" />
+													</p:column>
+													<p:column>
+														<p:selectOneMenu id="addressLegalHouseTypeChoice" value="#{contractorBackingBean.editSelectedRequisite.addressLegalHouseType}" disabled="#{!canEditSelectedContractor}" converter="addressHouseTypeConverter">
+															<c:if test="#{contractorBackingBean.editSelectedRequisite.addressLegalHouseType == null}">
+																<f:selectItem noSelectionOption="true" itemLabel="#{msgs['value.null']}" itemValue="#{null}" itemDisabled="#{contractorBackingBean.editSelectedRequisite.addressLegalHouseType != null}" />
+															</c:if>
+															<f:selectItems itemDisabled="#{!canEditSelectedContractor}" value="#{contractorModelBean.addressHouseTypeList}" var="addressLegalHouseType" itemLabel="#{addressLegalHouseType.nameShort} (#{addressLegalHouseType.nameFull})" itemValue="#{addressLegalHouseType}" />
+														</p:selectOneMenu>
+													</p:column>
+													<p:column>
+														<p:outputLabel value="#{msgs['requisites.addressLegalHouseNum']}" />
+													</p:column>
+													<p:column>
+														<p:inputText value="#{contractorBackingBean.editSelectedRequisite.addressLegalHouseNumber}" disabled="#{dis_legalFields}" readonly="#{!canEditSelectedContractor}" />
+													</p:column>
+												</p:row>
+												<p:row>
+													<p:column>
+														<p:outputLabel value="#{msgs['requisites.addressLegalBuildType']}" />
+													</p:column>
+													<p:column>
+														<p:selectOneMenu id="addressLegalBuildingTypeChoice" value="#{contractorBackingBean.editSelectedRequisite.addressLegalBuildingType}" disabled="#{!canEditSelectedContractor}" converter="addressBuildingTypeConverter">
+															<c:if test="#{contractorBackingBean.editSelectedRequisite.addressLegalBuildingType == null}">
+																<f:selectItem noSelectionOption="true" itemLabel="#{msgs['value.null']}" itemValue="#{null}" itemDisabled="#{contractorBackingBean.editSelectedRequisite.addressLegalBuildingType != null}" />
+															</c:if>
+															<f:selectItems itemDisabled="#{!canEditSelectedContractor}" value="#{contractorModelBean.addressBuildingTypeList}" var="addressLegalBuildingType" itemLabel="#{addressLegalBuildingType.nameShort} (#{addressLegalBuildingType.nameFull})" itemValue="#{addressLegalBuildingType}" />
+														</p:selectOneMenu>
+													</p:column>
+													<p:column>
+														<p:outputLabel value="#{msgs['requisites.addressLegalBuildNum']}" />
+													</p:column>
+													<p:column>
+														<p:inputText value="#{contractorBackingBean.editSelectedRequisite.addressLegalBuildingNumber}" disabled="#{dis_legalFields}" readonly="#{!canEditSelectedContractor}" />
+													</p:column>
+												</p:row>
+												<p:row>
+													<p:column>
+														<p:outputLabel value="#{msgs['requisites.addressLegalApartamentType']}" />
+													</p:column>
+													<p:column>
+														<p:selectOneMenu id="addressLegalApartmentTypeChoice" value="#{contractorBackingBean.editSelectedRequisite.addressLegalApartmentType}" disabled="#{!canEditSelectedContractor}" converter="addressApartmentTypeConverter">
+															<c:if test="#{contractorBackingBean.editSelectedRequisite.addressLegalApartmentType == null}">
+																<f:selectItem noSelectionOption="true" itemLabel="#{msgs['value.null']}" itemValue="#{null}" itemDisabled="#{contractorBackingBean.editSelectedRequisite.addressLegalApartmentType != null}" />
+															</c:if>
+															<f:selectItems itemDisabled="#{!canEditSelectedContractor}" value="#{contractorModelBean.addressApartmentTypeList}" var="addressLegalApartmentType" itemLabel="#{addressLegalApartmentType.nameShort} (#{addressLegalApartmentType.nameFull})" itemValue="#{addressLegalApartmentType}" />
+														</p:selectOneMenu>
+													</p:column>
+													<p:column>
+														<p:outputLabel value="#{msgs['requisites.addressLegalApartamentNum']}" />
+													</p:column>
+													<p:column>
+														<p:inputText value="#{contractorBackingBean.editSelectedRequisite.addressLegalApartmentNumber}" disabled="#{dis_legalFields}" readonly="#{!canEditSelectedContractor}" />
+													</p:column>
+												</p:row>
+												<p:row>
+													<p:column>
+														<p:outputLabel value="#{msgs['requisites.addressLegalDescription']}" />
+													</p:column>
+													<p:column colspan="3">
+														<p:inputTextarea rows="2" style="width:485px" value="#{contractorBackingBean.editSelectedRequisite.addressLegalDescription}" disabled="#{dis_legalFields}" readonly="#{!canEditSelectedContractor}" />
+													</p:column>
+												</p:row>
+											</p:panelGrid>
+										</p:outputPanel>
+									</p:tab>
+								</p:tabView>
+							</p:panelGrid>
+						</p:column>
+					</p:row>
+					<p:row>
+						<p:column colspan="2">
+							<b><p:separator /> <p:outputLabel value="#{msgs['bankaccounts']}" /> <i class="fa fa-angle-double-down" /></b>
+						</p:column>
+					</p:row>
+					<p:row>
+						<p:column style="vertical-align: top;">
+							<p:toolbar rendered="#{true}">
+								<f:facet name="left">
+									<p:commandButton icon="fa fa-plus"   update="bacs :form_contractor_edit:bac_fields" title="Добавить счёт" actionListener="#{contractorController.buttonActionNewBankAccount}" disabled="#{!canEditSelectedContractor}"/>
+									<p:spacer />
+									<p:commandButton icon="fa fa-close" update="bacs" title="Удалить счёт" onclick="PF('dlg_delete_bankaccount').show();" disabled="#{!canEditSelectedContractor}" />
+								</f:facet>
+								<f:facet name="right">
+									<p:commandButton icon="fa fa-check"  update="bacs" title="По умолчанию" actionListener="#{contractorController.buttonActionSetDefaultBankAccount}" disabled="#{!canEditSelectedContractor}"/>
+								</f:facet>
+							</p:toolbar>
+							<div style="height: 5px;" />
+							<p:remoteCommand name="rcb" actionListener="#{contractorController.updateBankAccount}" update="bac_fields :form_bankaccount_delete:dialog_delete_bankaccount bacs" />
+							<p:selectOneListbox id="bacs" value="#{contractorBackingBean.selectedBankAccount}" converter="bankAccountConverter" var="b" style="width:400px;">
+								<p:ajax onsuccess="rcb()"/>
+								<f:selectItems value="#{contractorBackingBean.selectedContractor.bankAccountsList}" var="bac" itemLabel="#{bac.id}" itemValue="#{bac}" />
+								<p:column>
+									<h:panelGrid columns="2" width="40">
+										<p:outputPanel style="text-align: center; color: green; width: 20px;" rendered="#{b.active}">
+											<i class="fa fa-toggle-on" title="#{msgs['requisites.active.true']}" />
+										</p:outputPanel>
+										<p:outputPanel style="text-align: center; color: red; width: 20px;" rendered="#{!b.active}">
+											<i class="fa fa-toggle-off" title="#{msgs['requisites.active.false']}" />
+										</p:outputPanel>
+										<p:outputPanel style="text-align: center; color: green; width: 20px;" rendered="#{b == defBankAccount}">
+											<i class="fa fa-check" title="#{msgs['bankaccount.default.ok']}" />
+										</p:outputPanel>
+										<p:outputPanel style="text-align: center; color: red; width: 20px;" rendered="#{b != defBankAccount}">
+											<i title="#{msgs['bankaccount.default.no']}" />
+										</p:outputPanel>
+									</h:panelGrid>
+								</p:column>
+								<p:column style="float:left; text-align: left;">
+									<p:outputPanel style="float: left; text-align: left; width: 190px; max-width: 190px; min-width: 190px; overflow: hidden;">
+										<p:outputLabel style="white-space:nowrap;" value="#{cpom.util.ifFirstStringNullOrEmpty(b.bankName,'','Банк не указан')}" />
+									</p:outputPanel>
+								</p:column>
+								<p:column>
+									<p:outputPanel style="text-align: right; width: 150px; max-width: 150px; min-width: 150px; overflow: hidden;">
+										<h:outputText style="white-space:nowrap;" value="#{contractorController.bankAccountNumberValidation(b.bankNumber)}" />
+									</p:outputPanel>
+								</p:column>
+							</p:selectOneListbox>
+						</p:column>
+						<p:column style="float:left;">
+							<p:panelGrid id="bac_fields" styleClass="ui-noborder" style="margin-left:14px">
+								<p:row>
+									<p:column style="width:180px">
+										<p:outputLabel value="#{msgs['bankaccount.active']}" />
+									</p:column>
+									<p:column colspan="3">
+										<p:selectBooleanCheckbox value="#{contractorBackingBean.editSelectedBankAccount.active}" disabled="#{!canEditSelectedContractor}" />
+									</p:column>
+								</p:row>
+								<p:row>
+									<p:column style="width:180px">
+										<p:outputLabel value="#{msgs['bankaccount.number']}" />
+									</p:column>
+									<p:column colspan="3">
+										<p:inputText value="#{contractorBackingBean.editSelectedBankAccount.bankNumber}"  readonly="#{!canEditSelectedContractor}" />
+									</p:column>
+								</p:row>
+								<p:row>
+									<p:column>
+										<p:outputLabel value="#{msgs['bankaccount.bankName']}" />
+									</p:column>
+									<p:column>
+										<p:inputText value="#{contractorBackingBean.editSelectedBankAccount.bankName}" readonly="#{!canEditSelectedContractor}"/>
+									</p:column>
+								</p:row>
+								<p:row>
+									<p:column>
+										<p:outputLabel value="#{msgs['bankaccount.BIK']}" />
+									</p:column>
+									<p:column>
+										<p:inputText value="#{contractorBackingBean.editSelectedBankAccount.bik}" readonly="#{!canEditSelectedContractor}" />
+									</p:column>
+								</p:row>
+								<p:row>
+									<p:column>
+										<p:outputLabel value="#{msgs['bankaccount.bankAccountNum']}" />
+									</p:column>
+									<p:column>
+										<p:inputText value="#{contractorBackingBean.editSelectedBankAccount.bankAccountNumber}" readonly="#{!canEditSelectedContractor}" />
+									</p:column>
+								</p:row>
+								<p:row>
+									<p:column>
+										<p:outputLabel value="#{msgs['bankaccount.bankCity']}" />
+									</p:column>
+									<p:column>
+										<p:inputText value="#{contractorBackingBean.editSelectedBankAccount.city}" readonly="#{!canEditSelectedContractor}" />
+									</p:column>
+								</p:row>
+								<p:row>
+									<p:column>
+										<p:outputLabel value="#{msgs['bankaccount.description']}" />
+									</p:column>
+									<p:column>
+										<p:inputTextarea rows="2" style="width:485px" value="#{contractorBackingBean.editSelectedBankAccount.description}" readonly="#{!canEditSelectedContractor}" />
+									</p:column>
+								</p:row>
+							</p:panelGrid>
+						</p:column>
+					</p:row>
+				</p:panelGrid>
+
+				<p:separator />
+
+				<p:panelGrid styleClass="ui-noborder" style="float:right;">
+					<p:row>
+						<p:column>
+							<p:commandButton id="com_saveEdit" value="Сохранить" actionListener="#{contractorController.buttonActionSaveContractor}"/>
+							<p:spacer />
+							<p:commandButton id="com_cancelSaveEdit" immediate="true" value="Отмена" actionListener="#{contractorController.buttonActionCancelContractor}" />
+						</p:column>
+					</p:row>
+				</p:panelGrid>
+
+				<p:defaultCommand target="com_saveEdit" />
+			</h:form>
+		</ui:define>
+	</ui:composition>
+</h:body>
+</html>

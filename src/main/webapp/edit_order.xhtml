@@ -1,0 +1,1401 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" 
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:h="http://java.sun.com/jsf/html" xmlns:f="http://java.sun.com/jsf/core" xmlns:ui="http://java.sun.com/jsf/facelets" xmlns:p="http://primefaces.org/ui" xmlns:c="http://java.sun.com/jsp/jstl/core">
+<h:body>
+	<ui:composition template="/layout/forcab.xhtml">
+		<ui:define name="windowTitle">#{msgs['order']}</ui:define>
+		<ui:define name="content">
+
+			<ui:param name="canEdit" value="#{loginController.hasAccessTo(enumBean.modelOrder, enumBean.accessEdit)}" />
+			<ui:param name="canAdd" value="#{loginController.hasAccessTo(enumBean.modelOrder, enumBean.accessAdd)}" />
+			<ui:param name="canDelete" value="#{loginController.hasAccessTo(enumBean.modelOrder, enumBean.accessAdd)}" />
+
+
+			<p:dialog responsive="true" style="width:50%; max-width: 95%; max-height: 95%; overflow: auto;" id="dialog_product_group" header="Выбор товаров" widgetVar="dlg_product_choice" resizable="false" modal="true" draggable="false" rendered="#{!canEditProducts}">
+				<h:form id="form_product_choice">
+					<div class="ui-fluid" style="width: 70%;">
+						<div class="ui-grid ui-grid-responsive">
+							<div class="ui-grid-row">
+								<div class="ui-grid-col-3">
+
+									<div id="lo_goods_groups">
+										<p:tree id="goods_groups" style="width: 99.5%;" value="#{productController.root}" var="node" dynamic="true" selectionMode="single" selection="#{productBackingBean.selectedProductNode}" draggable="#{productBackingBean.productGroupSwitchOrder}" droppable="#{productBackingBean.productGroupSwitchOrder}" dragdropScope="demo">
+											<p:ajax event="select" listener="#{productController.changeProductsOfSelectedGroup}" update=":form_product_choice:table_goods form_product_choice:goods_groups_list" />
+											<p:treeNode expandedIcon="ui-icon-folder-open" collapsedIcon="ui-icon-folder-collapsed">
+												<p:outputLabel id="node_group" ondblclick="PF('dlg_edit_group').show();" value="#{node.title}" />
+											</p:treeNode>
+										</p:tree>
+									</div>
+									<div id="lo_goods_groups_list">
+
+										<p:outputPanel id="panel_goods_groups_list">
+											<p:selectOneMenu id="goods_groups_list"  converter="productNodeConverter" value="#{productBackingBean.selectedProductNode}">
+												<p:ajax event="change" listener="#{productController.changeProductsOfSelectedGroup}" update=":form_product_choice:table_goods form_product_choice:goods_groups" />
+												<f:selectItems value="#{productController.getNodeList()}" var="gtn" itemValue="#{gtn}" itemLabel="#{gtn.data.title}" />
+											</p:selectOneMenu>
+										</p:outputPanel>
+
+										<p:sticky target="panel_goods_groups_list" margin="5" />
+									</div>
+								</div>
+
+								<div class="ui-grid-col-1 ui-grid-col-5px">
+									<div style="height: 5px;" />
+								</div>
+								<div class="ui-grid-col-10">
+
+									<div style="height: 5px;" />
+
+									<p:dataTable id="table_goods" draggableRows="#{productBackingBean.productGroupSwitchOrder}" var="good" value="#{productController.products}" selectionMode="single" selection="#{orderBackingBean.selectedOrder.product}" rowKey="#{good.id}"
+												 rows="20" paginator="true" paginatorAlwaysVisible="false" paginatorTemplate="{CurrentPageReport} {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink}" currentPageReportTemplate="Страница {currentPage} из {totalPages}" emptyMessage="Нет записей">
+										<p:ajax event="rowDblselect" listener="#{orderController.productChangeListener(good)}" oncomplete="PF('dlg_product_choice').hide();" update="form_order_edit:orderProductLabelPanel form_order_edit:orderProductPanel"/>
+
+										<p:column style="width:20px; text-align: center;" priority="1">
+											<f:facet name="header">
+												<i class="fa fa-check" />
+											</f:facet>
+											<p:commandButton icon="fa fa-check" actionListener="#{orderController.productChangeListener(good)}" onsuccess="PF('dlg_product_choice').hide();" update="form_order_edit:orderProductLabelPanel form_order_edit:orderProductPanel" />
+										</p:column>
+
+										<p:column headerText="#{msgs['product.type']}" style="white-space:nowrap;" priority="2" rendered="false">
+											<h:outputText value="Товар" rendered="#{good.type == 1}" />
+											<h:outputText value="Услуга" rendered="#{good.type == 2}" />
+										</p:column>
+
+										<p:column headerText="#{msgs['product.active']}" style="white-space:nowrap;width:30px;" priority="3">
+											<p:outputPanel style="text-align: center;" rendered="#{good.active}">
+												<i class="fa fa-check-square-o" />
+											</p:outputPanel>
+											<p:outputPanel style="text-align: center;" rendered="#{!good.active}">
+												<i class="fa fa-square-o" />
+											</p:outputPanel>
+										</p:column>
+
+										<p:column headerText="#{msgs['product.kind']}" style="white-space:nowrap;width:80px;" priority="2">
+											<h:outputText id="button_edit" value="#{good.productType.nameFull}" />
+										</p:column>
+										<p:column headerText="База" style="white-space:nowrap;" priority="2">
+											<h:outputText value="#{good.shipmentBaseId.nameShort}" />
+										</p:column>
+										<p:column headerText="#{msgs['product.code']}" style="white-space:nowrap;" priority="1">
+											<h:outputText value="#{good.code}" />
+										</p:column>
+										<p:column headerText="#{msgs['product.nameShort']}" style="white-space:nowrap;" priority="2" rendered="false">
+											<h:outputText value="#{good.nameShort}" />
+										</p:column>
+										<p:column headerText="#{msgs['product.price']}" style="width:130px;" priority="1">
+											<ui:param name="pd" value="#{productPriceService.getPriceDirection(good,productPriceService.getProductActualPrice(good.productPricesList))}" />
+											<p:panelGrid styleClass="goodsTable" columns="3" cellpadding="0" cellspacing="0">
+
+												<h:outputText style="text-align: left; float:left; font-size: xx-small;" value="#{productPriceService.getProductActualPrice(good.productPricesList).timeModified}">
+													<f:convertDateTime pattern="dd.MM.yy HH:mm" />
+												</h:outputText>
+												<h:outputText style="float:right;" value="#{productPriceService.getProductActualPrice(good.productPricesList).price}">
+													<f:convertNumber groupingUsed="true" maxFractionDigits="2" />
+												</h:outputText>
+												<p:outputPanel>
+													<p:outputPanel style="color: green; font-weight: bold;" rendered="#{pd==0}">
+														<i class="fa fa-circle-o" />
+													</p:outputPanel>
+													<p:outputPanel style="color: green; font-weight: bold;" rendered="#{pd==1}">
+														<i class="fa fa-arrow-up" />
+														<p:spacer width="3" />
+														<h:outputLabel value="#{productPriceService.getPriceDifference(good,productPriceService.getProductActualPrice(good.productPricesList))}">
+															<f:convertNumber groupingUsed="true" maxFractionDigits="2" />
+														</h:outputLabel>
+													</p:outputPanel>
+													<p:outputPanel style="color: red; font-weight: bold;" rendered="#{pd==-1}">
+														<i class="fa fa-arrow-down" />
+														<p:spacer width="3" />
+														<h:outputLabel value="#{productPriceService.getPriceDifference(good,productPriceService.getProductActualPrice(good.productPricesList))}">
+															<f:convertNumber groupingUsed="true" maxFractionDigits="2" />
+														</h:outputLabel>
+													</p:outputPanel>
+												</p:outputPanel>
+											</p:panelGrid>
+										</p:column>
+
+										<p:column headerText="#{msgs['product.meashureUnit']}" style="width:20px;white-space:nowrap;" priority="2" rendered="false">
+											<h:outputText value="#{good.measureUnit.id}" />
+										</p:column>
+
+										<p:column headerText="#{msgs['product.contractPrice']}" style="white-space:nowrap;" priority="3" rendered="false">
+											<p:outputPanel style="text-align: center;" rendered="#{good.contractPrice}">
+												<i class="fa fa-check-square-o" />
+											</p:outputPanel>
+											<p:outputPanel style="text-align: center;" rendered="#{!good.contractPrice}">
+												<i class="fa fa-square-o" />
+											</p:outputPanel>
+										</p:column>
+
+										<p:column headerText="#{msgs['product.balance']}" style="white-space:nowrap;" priority="1">
+											<h:outputText value="#{good.balance}" />
+										</p:column>
+									</p:dataTable>
+								</div>
+							</div>
+						</div>
+					</div>
+				</h:form>
+			</p:dialog>
+
+			<h:form id="form_order_edit">
+				<p:growl id="form_order_edit_growl" showDetail="true" showSummary="true" sticky="true" escape="false" />
+
+				<div class="ui-fluid">
+					<div class="ui-grid ui-grid-responsive">
+
+						<p:outputPanel styleClass="resp_grid_row_std">
+							<div class="ui-grid-row">
+								<div class="ui-grid-col-1 resp_ui-grid-col-1">
+									<p:outputLabel value="#{msgs['order.number']}" />
+								</div>
+								<div class="ui-grid-col-3">
+									<p:outputPanel>
+										<p:outputLabel styleClass="field_readonly" value="#{orderBackingBean.selectedOrder.id}" rendered="#{orderBackingBean.selectedOrder.id!=null}"/>
+									</p:outputPanel>
+								</div>
+							</div>
+						</p:outputPanel>
+
+						<p:outputPanel styleClass="resp_grid_row_std">
+							<div class="ui-grid-row">
+								<div class="ui-grid-col-1 resp_ui-grid-col-1">
+									<p:outputLabel for="orderStatusTypeSelectOneMenu" value="#{msgs['order.status']}" />
+								</div>
+								<div class="ui-grid-col-3">
+									<p:outputPanel>
+										<p:selectOneMenu id="orderStatusTypeSelectOneMenu" value="#{orderBackingBean.selectedOrder.orderStatusType}" disabled="#{!canEdit}" converter="orderStatusTypeConverter">
+											<c:if test="#{orderBackingBean.selectedOrder.orderStatusType == null}">
+												<f:selectItem noSelectionOption="true" itemLabel="#{msgs['value.null']}" itemValue="#{null}" itemDisabled="#{orderBackingBean.selectedOrder.orderStatusType != null}" />
+											</c:if>
+											<f:selectItems itemDisabled="#{!canEdit}" value="#{orderController.getOrderStatusTypeList()}" var="orderStatusType" itemLabel="#{orderStatusType.name}" itemValue="#{orderStatusType}" />
+											<p:ajax event="change" listener="#{orderController.orderStatusTypeChangeListener}"/>
+										</p:selectOneMenu>
+									</p:outputPanel>
+								</div>
+							</div>
+						</p:outputPanel>
+
+						<p:separator />
+
+						<p:outputPanel styleClass="resp_grid_row_std">
+							<div class="ui-grid-row">
+								<div class="ui-grid-col-1 resp_ui-grid-col-1">
+									<p:outputLabel for="orderCreatorSelectOneMenu" value="#{msgs['order.creatorUser']}" />
+								</div>
+								<div class="ui-grid-col-3">
+									<p:outputPanel>
+										<p:selectOneMenu id="orderCreatorSelectOneMenu" value="#{orderBackingBean.selectedOrder.creator}" disabled="#{!canEdit}" converter="userConverter">
+											<c:if test="#{orderBackingBean.selectedOrder.creator == null}">
+												<f:selectItem noSelectionOption="true" itemLabel="#{msgs['value.null']}" itemValue="#{null}" itemDisabled="#{orderBackingBean.selectedOrder.creator != null}" />
+											</c:if>
+											<f:selectItems itemDisabled="#{!canEdit}" value="#{orderController.getUsersForCreator()}" var="orderCreator" itemLabel="#{orderCreator.lastName} #{orderCreator.firstName} #{orderCreator.patronymic}" itemValue="#{orderCreator}" />
+											<p:ajax event="change" listener="#{orderController.creatorChangeListener}"/>
+										</p:selectOneMenu>
+									</p:outputPanel>
+								</div>
+							</div>
+						</p:outputPanel>
+
+						<p:outputPanel styleClass="resp_grid_row_std">
+							<div class="ui-grid-row">
+								<div class="ui-grid-col-1 resp_ui-grid-col-1">
+									<p:outputLabel value="#{msgs['order.createdDate']}" />
+								</div>
+								<div class="ui-grid-col-3">
+									<p:calendar value="#{orderBackingBean.selectedOrder.createdDate}" pattern="dd.MM.yyyy HH:mm" locale="ru" />
+								</div>
+							</div>
+						</p:outputPanel>
+
+						<p:outputPanel styleClass="resp_grid_row_std">
+							<div class="ui-grid-row">
+								<div class="ui-grid-col-1 resp_ui-grid-col-1">
+									<p:outputLabel value="#{msgs['order.loadClaimDate']}" />
+								</div>
+								<div class="ui-grid-col-3">
+									<p:calendar value="#{orderBackingBean.selectedOrder.loadClaimDate}" pattern="dd.MM.yyyy HH:mm" locale="ru" />
+								</div>
+							</div>
+						</p:outputPanel>
+
+						<p:outputPanel styleClass="resp_grid_row_std">
+							<div class="ui-grid-row">
+								<div class="ui-grid-col-1 resp_ui-grid-col-1">
+									<p:outputLabel value="#{msgs['order.closedDate']}" />
+								</div>
+								<div class="ui-grid-col-3">
+									<p:calendar value="#{orderBackingBean.selectedOrder.closedDate}" pattern="dd.MM.yyyy HH:mm" locale="ru" />
+								</div>
+							</div>
+						</p:outputPanel>
+
+						<p:outputPanel styleClass="resp_grid_row_std">
+							<div class="ui-grid-row">
+								<div class="ui-grid-col-1 resp_ui-grid-col-1">
+									<p:outputLabel value="#{msgs['order.canceledDate']}" />
+								</div>
+								<div class="ui-grid-col-3">
+									<p:calendar value="#{orderBackingBean.selectedOrder.cancelledDate}" pattern="dd.MM.yyyy HH:mm" locale="ru" />
+								</div>
+							</div>
+						</p:outputPanel>
+
+						<p:separator />
+
+						<p:outputPanel id="orderOwnerPanel" styleClass="resp_grid_row_std">
+							<div class="ui-grid-row">
+								<div class="ui-grid-col-1 resp_ui-grid-col-1">
+									<p:outputLabel for="orderOwnerSelectOneMenu" value="#{msgs['order.ownerUser']}" />
+								</div>
+								<div class="ui-grid-col-3">
+									<p:outputPanel>
+										<p:selectOneMenu id="orderOwnerSelectOneMenu" value="#{orderBackingBean.selectedOrder.owner}" disabled="#{!canEdit}" converter="userConverter">
+											<c:if test="#{orderBackingBean.selectedOrder.owner == null}">
+												<f:selectItem noSelectionOption="true" itemLabel="#{msgs['value.null']}" itemValue="#{null}" itemDisabled="#{orderBackingBean.selectedOrder.owner != null}" />
+											</c:if>
+											<f:selectItems itemDisabled="#{!canEdit}" value="#{orderController.getUsersForOwner()}" var="orderOwner" itemLabel="#{orderOwner.lastName} #{orderOwner.firstName} #{orderOwner.patronymic}" itemValue="#{orderOwner}" />
+											<p:ajax event="change" listener="#{orderController.ownerChangeListener}"/>
+										</p:selectOneMenu>
+									</p:outputPanel>
+								</div>
+							</div>
+						</p:outputPanel>
+
+						<p:outputPanel styleClass="resp_grid_row_std">
+							<div class="ui-grid-row">
+								<div class="ui-grid-col-1 resp_ui-grid-col-1">
+									<p:outputLabel for="orderCompanySelectOneMenu" value="#{msgs['order.company']}" />
+								</div>
+								<div class="ui-grid-col-3">
+									<p:selectOneMenu id="orderCompanySelectOneMenu" value="#{orderBackingBean.selectedOrder.company}" disabled="#{!canEdit}" converter="contractorConverter">
+										<c:if test="#{orderBackingBean.selectedOrder.owner == null}">
+											<f:selectItem noSelectionOption="true" itemLabel="#{msgs['value.null']}" itemValue="#{null}" itemDisabled="#{orderBackingBean.selectedOrder.company != null}" />
+										</c:if>
+										<f:selectItems itemDisabled="#{!canEdit}" value="#{orderController.getAllCompanies()}" var="orderCompany" itemLabel="#{orderCompany.nameWork}" itemValue="#{orderCompany}" />
+										<p:ajax event="change" listener="#{orderController.companyChangeListener}"/>
+									</p:selectOneMenu>
+								</div>
+							</div>
+						</p:outputPanel>
+
+						<p:outputPanel styleClass="resp_grid_row_std">
+							<div class="ui-grid-row">
+								<div class="ui-grid-col-1 resp_ui-grid-col-1">
+									<p:outputLabel for="orderTransportationCompanySelectOneMenu" value="#{msgs['order.companyTrans']}" />
+								</div>
+								<div class="ui-grid-col-3">
+									<p:selectOneMenu id="orderTransportationCompanySelectOneMenu" value="#{orderBackingBean.selectedOrder.transportationCompany}" disabled="#{!canEdit}" converter="contractorConverter">
+										<c:if test="#{orderBackingBean.selectedOrder.transportationCompany == null}">
+											<f:selectItem noSelectionOption="true" itemLabel="#{msgs['value.null']}" itemValue="#{null}" itemDisabled="#{orderBackingBean.selectedOrder.transportationCompany != null}" />
+										</c:if>
+										<f:selectItems itemDisabled="#{!canEdit}" value="#{orderController.getAllTransportationCompanies()}" var="orderTransportationCompany" itemLabel="#{orderTransportationCompany.nameWork}" itemValue="#{orderTransportationCompany}" />
+										<p:ajax event="change" listener="#{orderController.transportationCompanyChangeListener}"/>
+									</p:selectOneMenu>
+								</div>
+							</div>
+						</p:outputPanel>
+
+						<p:separator />
+
+						<p:outputPanel id="orderProductLabelPanel" styleClass="resp_grid_row_std">
+							<div class="ui-grid-row">
+								<div class="ui-grid-col-1 resp_ui-grid-col-1">
+									<p:outputLabel value="#{msgs['order.goodKind']}" />
+								</div>
+								<div class="ui-grid-col-3">
+									<p:outputLabel id="productTypeNameWork" styleClass="field_readonly" value="#{orderBackingBean.selectedOrder.productTypeNameWork}" rendered="#{true}" />
+								</div>
+							</div>
+						</p:outputPanel>
+
+						<p:outputPanel id="orderProductPanel" styleClass="resp_grid_row_std">
+							<div class="ui-grid-row">
+								<div class="ui-grid-col-1 resp_ui-grid-col-1">
+									<p:outputLabel for="field_good" value="#{msgs['order.good']}" />
+								</div>
+								<div class="ui-grid-col-3">
+									<p:outputPanel>
+										<table width="100%" border="0" cellpadding="0" cellspacing="0">
+											<tr>
+												<td><p:inputText styleClass="field_readonly" id="field_good" immediate="false" readonly="true" value="#{orderBackingBean.selectedOrder.productNameShort}">
+												</p:inputText></td>
+												<td style="width: 30px;" align="right"><p:commandButton style="width:30px;" update="form_product_choice" icon="fa fa-list-ul" onsuccess="PF('dlg_product_choice').show();" /></td>
+											</tr>
+										</table>
+									</p:outputPanel>
+								</div>
+							</div>
+						</p:outputPanel>
+
+						<p:outputPanel styleClass="resp_grid_row_std">
+							<div class="ui-grid-row">
+								<div class="ui-grid-col-1 resp_ui-grid-col-1">
+									<p:outputLabel value="#{msgs['order.transport']}" />
+								</div>
+								<div class="ui-grid-col-3">
+									<h:outputText id="orderTransportText" styleClass="field_readonly" value="#{orderController.getTransportInfoForTableOrders(orderBackingBean.selectedOrder)}"/>
+								</div>
+							</div>
+						</p:outputPanel>
+
+						<p:outputPanel styleClass="resp_grid_row_std">
+							<div class="ui-grid-row">
+								<div class="ui-grid-col-1 resp_ui-grid-col-1">
+									<p:outputLabel for="orderTransportationVehicleTypeSelectOneMenu" value="#{msgs['order.transportType']}" />
+								</div>
+								<div class="ui-grid-col-3">
+									<p:selectOneMenu id="orderTransportationVehicleTypeSelectOneMenu" value="#{orderBackingBean.selectedOrder.transportationVehicleType}" disabled="#{!canEdit}" converter="transportationVehicleTypeConverter">
+										<c:if test="#{orderBackingBean.selectedOrder.transportationVehicleType == null}">
+											<f:selectItem noSelectionOption="true" itemLabel="#{msgs['value.null']}" itemValue="#{null}" itemDisabled="#{orderBackingBean.selectedOrder.transportationVehicleType != null}" />
+										</c:if>
+										<f:selectItems itemDisabled="#{!canEdit}" value="#{orderController.getAllTransportationVehicleTypes()}" var="orderTransportationVehicleType" itemLabel="#{orderTransportationVehicleType.name}" itemValue="#{orderTransportationVehicleType}" />
+										<p:ajax event="change" update="form_order_edit:orderTransportText
+																		form_order_edit:orderTransportationCompanyTypePanel
+																		form_order_edit:orderTransportationHiredVehicleTypePanel
+																		form_order_edit:orderVehiclePanel
+																		form_order_edit:orderDriverPanel
+																		form_order_edit:orderCarrierPanel
+																		form_order_edit:orderTransportManagerPanel" listener="#{orderController.transportationVehicleTypeChangeListener}"/>
+									</p:selectOneMenu>
+								</div>
+							</div>
+						</p:outputPanel>
+
+						<p:outputPanel id="orderTransportationCompanyTypePanel">
+							<p:outputPanel styleClass="resp_grid_row_std" rendered="#{orderBackingBean.selectedOrder.transportationVehicleTypeType==enumBean.transportationVehicleTypeAuto.type}">
+								<div class="ui-grid-row">
+									<div class="ui-grid-col-1 resp_ui-grid-col-1">
+										<p:outputLabel for="orderTransportationCompanyTypeSelectOneMenu" value="#{msgs['order.transportCompanyType']}" rendered="#{orderBackingBean.selectedOrder.transportationVehicleTypeType==enumBean.transportationVehicleTypeAuto.type}"/>
+									</div>
+									<div class="ui-grid-col-3">
+										<p:selectOneMenu id="orderTransportationCompanyTypeSelectOneMenu" value="#{orderBackingBean.selectedOrder.transportationCompanyType}" disabled="#{!canEdit}" converter="transportationCompanyTypeConverter" rendered="#{orderBackingBean.selectedOrder.transportationVehicleTypeType==enumBean.transportationVehicleTypeAuto.type}">
+											<c:if test="#{orderBackingBean.selectedOrder.transportationCompanyType == null}">
+												<f:selectItem noSelectionOption="true" itemLabel="#{msgs['value.null']}" itemValue="#{null}" itemDisabled="#{orderBackingBean.selectedOrder.transportationCompanyType != null}" />
+											</c:if>
+											<f:selectItems itemDisabled="#{!canEdit}" value="#{orderController.getAllTransportationCompanyTypes()}" var="orderTransportationCompanyType" itemLabel="#{orderTransportationCompanyType.name}" itemValue="#{orderTransportationCompanyType}" />
+											<p:ajax event="change" update="form_order_edit:orderTransportText
+																		form_order_edit:orderTransportationHiredVehicleTypePanel
+																		form_order_edit:orderVehiclePanel
+																		form_order_edit:orderDriverPanel
+																		form_order_edit:orderCarrierPanel
+																		form_order_edit:orderTransportManagerPanel
+																		form_order_edit:orderTransportationCompanyTypeSelfPanel
+																		form_order_edit:orderTransportationCompanyTypeSelfPanelAccordion
+																		form_order_edit:orderTransportationCompanyTypeSelfPanelDriverShortInfo
+																		form_order_edit:orderTransportationCompanyTypeSelfPanelDriverAccordion" listener="#{orderController.transportationCompanyTypeChangeListener}"/>
+										</p:selectOneMenu>
+									</div>
+								</div>
+							</p:outputPanel>
+						</p:outputPanel>
+
+						<p:outputPanel id="orderTransportationHiredVehicleTypePanel">
+							<p:outputPanel  styleClass="resp_grid_row_std" rendered="#{orderBackingBean.selectedOrder.transportationCompanyTypeType==enumBean.transportationCompanyTypeHired.type}">
+								<div class="ui-grid-row">
+									<div class="ui-grid-col-1 resp_ui-grid-col-1">
+										<p:outputLabel value="" />
+									</div>
+									<div class="ui-grid-col-3">
+										<p:selectOneMenu id="orderTransportationHiredVehicleTypeSelectOneMenu" value="#{orderBackingBean.selectedOrder.transportationHiredVehicleType}" disabled="#{!canEdit}" converter="transportationHiredVehicleTypeConverter"
+														 rendered="#{orderBackingBean.selectedOrder.transportationCompanyTypeType==enumBean.transportationCompanyTypeHired.type}">
+											<c:if test="#{orderBackingBean.selectedOrder.transportationHiredVehicleType == null}">
+												<f:selectItem noSelectionOption="true" itemLabel="#{msgs['value.null']}" itemValue="#{null}" itemDisabled="#{orderBackingBean.selectedOrder.transportationHiredVehicleType != null}" />
+											</c:if>
+											<f:selectItems itemDisabled="#{!canEdit}" value="#{orderController.getAllTransportationHiredVehicleTypes()}" var="orderTransportationHiredVehicleType" itemLabel="#{orderTransportationHiredVehicleType.name}" itemValue="#{orderTransportationHiredVehicleType}" />
+											<p:ajax event="change" update="form_order_edit:orderTransportText
+																		form_order_edit:orderVehiclePanel
+																		form_order_edit:orderDriverPanel
+																		form_order_edit:orderCarrierPanel
+																		form_order_edit:orderTransportManagerPanel" listener="#{orderController.transportationHiredVehicleTypeChangeListener}"/>
+										</p:selectOneMenu>
+									</div>
+								</div>
+							</p:outputPanel>
+						</p:outputPanel>
+
+						<p:outputPanel id="orderVehiclePanel">
+							<p:outputPanel styleClass="resp_grid_row_std" rendered="#{orderBackingBean.selectedOrder.transportationHiredVehicleTypeType==enumBean.transportationHiredVehicleTypeInternal.type
+																								or orderBackingBean.selectedOrder.transportationCompanyTypeType==enumBean.transportationCompanyTypeTransport.type}">
+								<div class="ui-grid-row">
+									<div class="ui-grid-col-1 resp_ui-grid-col-1">
+										<p:outputLabel value="#{msgs['order.vehicle']}" rendered="#{orderBackingBean.selectedOrder.transportationHiredVehicleTypeType==enumBean.transportationHiredVehicleTypeInternal.type
+																								or orderBackingBean.selectedOrder.transportationCompanyTypeType==enumBean.transportationCompanyTypeTransport.type}"/>
+									</div>
+									<div class="ui-grid-col-3">
+										<p:selectOneMenu id="orderVehicleSelectOneMenu" filter="true" filterMatchMode="contains" caseSensitive="false" value="#{orderBackingBean.selectedOrder.vehicle}" disabled="#{!canEdit}" converter="vehicleConverter"
+														 rendered="#{orderBackingBean.selectedOrder.transportationHiredVehicleTypeType==enumBean.transportationHiredVehicleTypeInternal.type
+													 				or orderBackingBean.selectedOrder.transportationCompanyTypeType==enumBean.transportationCompanyTypeTransport.type}">
+											<c:if test="#{orderBackingBean.selectedOrder.vehicle == null}">
+												<f:selectItem noSelectionOption="true" itemLabel="#{msgs['value.null']}" itemValue="#{null}" itemDisabled="#{orderBackingBean.selectedOrder.vehicle != null}" />
+											</c:if>
+											<f:selectItems itemDisabled="#{!canEdit}" value="#{orderController.getAllVehicles()}" var="orderVehicle" itemLabel="#{orderVehicle.truck.title} - #{orderVehicle.truck.brand} #{orderVehicle.truck.govNumber}  #{orderVehicle.trailer.govNumber}" itemValue="#{orderVehicle}" />
+											<p:ajax event="change" update="form_order_edit:orderCarrierPanel" listener="#{orderController.vehicleChangeListener}"/>
+										</p:selectOneMenu>
+									</div>
+								</div>
+							</p:outputPanel>
+						</p:outputPanel>
+
+						<p:outputPanel id="orderDriverPanel">
+							<p:outputPanel styleClass="resp_grid_row_std" rendered="#{orderBackingBean.selectedOrder.transportationHiredVehicleTypeType==enumBean.transportationHiredVehicleTypeInternal.type
+																								or orderBackingBean.selectedOrder.transportationCompanyTypeType==enumBean.transportationCompanyTypeTransport.type}">
+								<div class="ui-grid-row">
+									<div class="ui-grid-col-1 resp_ui-grid-col-1">
+										<p:outputLabel value="#{msgs['order.driver']}" rendered="#{orderBackingBean.selectedOrder.transportationHiredVehicleTypeType==enumBean.transportationHiredVehicleTypeInternal.type
+																								or orderBackingBean.selectedOrder.transportationCompanyTypeType==enumBean.transportationCompanyTypeTransport.type}" />
+									</div>
+									<div class="ui-grid-col-3">
+										<p:selectOneMenu id="orderDriverSelectOneMenu" filter="true" filterMatchMode="contains" caseSensitive="false" value="#{orderBackingBean.selectedOrder.driver}" disabled="#{!canEdit}" converter="driverConverter"
+														 rendered="#{orderBackingBean.selectedOrder.transportationHiredVehicleTypeType==enumBean.transportationHiredVehicleTypeInternal.type
+													 				or orderBackingBean.selectedOrder.transportationCompanyTypeType==enumBean.transportationCompanyTypeTransport.type}">
+											<c:if test="#{orderBackingBean.selectedOrder.driver == null}">
+												<f:selectItem noSelectionOption="true" itemLabel="#{msgs['value.null']}" itemValue="#{null}" itemDisabled="#{orderBackingBean.selectedOrder.driver != null}" />
+											</c:if>
+											<f:selectItems itemDisabled="#{!canEdit}" value="#{orderController.getAllDrivers()}" var="orderDriver" itemLabel="#{orderDriver.lastName} #{orderDriver.firstName} #{orderDriver.patronymic}" itemValue="#{orderDriver}" />
+											<p:ajax event="change" listener="#{orderController.driverChangeListener}"/>
+										</p:selectOneMenu>
+									</div>
+								</div>
+							</p:outputPanel>
+						</p:outputPanel>
+
+						<p:outputPanel id="orderCarrierPanel">
+							<p:outputPanel styleClass="resp_grid_row_std" rendered="#{orderBackingBean.selectedOrder.transportationHiredVehicleTypeType==enumBean.transportationHiredVehicleTypeInternal.type
+												   										or orderBackingBean.selectedOrder.transportationHiredVehicleTypeType==enumBean.transportationHiredVehicleTypeExternal.type
+												   										or orderBackingBean.selectedOrder.transportationVehicleType.type==enumBean.transportationVehicleTypeRailway.type}">
+								<div class="ui-grid-row">
+									<div class="ui-grid-col-1 resp_ui-grid-col-1">
+										<p:outputLabel value="#{msgs['order.carrier']}"
+													   rendered="#{orderBackingBean.selectedOrder.transportationHiredVehicleTypeType==enumBean.transportationHiredVehicleTypeInternal.type
+												   				or orderBackingBean.selectedOrder.transportationHiredVehicleTypeType==enumBean.transportationHiredVehicleTypeExternal.type
+												   				or orderBackingBean.selectedOrder.transportationVehicleType.type==enumBean.transportationVehicleTypeRailway.type}"/>
+									</div>
+									<div class="ui-grid-col-3">
+										<p:selectOneMenu id="orderCarrierSelectOneMenu" filter="true" filterMatchMode="contains" caseSensitive="false" value="#{orderBackingBean.selectedOrder.carrier}" disabled="#{!canEdit}" converter="contractorConverter"
+														 rendered="#{orderBackingBean.selectedOrder.transportationHiredVehicleTypeType==enumBean.transportationHiredVehicleTypeInternal.type
+													 				or orderBackingBean.selectedOrder.transportationHiredVehicleTypeType==enumBean.transportationHiredVehicleTypeExternal.type
+													 				or orderBackingBean.selectedOrder.transportationVehicleType.type==enumBean.transportationVehicleTypeRailway.type}">
+											<c:if test="#{orderBackingBean.selectedOrder.carrier == null}">
+												<f:selectItem noSelectionOption="true" itemLabel="#{msgs['value.null']}" itemValue="#{null}" itemDisabled="#{orderBackingBean.selectedOrder.carrier != null}" />
+											</c:if>
+											<f:selectItems itemDisabled="#{!canEdit}" value="#{orderController.getAllCarriers()}" var="orderCarrier" itemLabel="#{orderCarrier.nameWork}" itemValue="#{orderCarrier}" />
+											<p:ajax event="change" listener="#{orderController.carrierChangeListener}"/>
+										</p:selectOneMenu>
+									</div>
+								</div>
+							</p:outputPanel>
+						</p:outputPanel>
+
+						<p:outputPanel id="orderTransportManagerPanel">
+							<p:outputPanel  styleClass="resp_grid_row_std" rendered="#{orderBackingBean.selectedOrder.transportationHiredVehicleTypeType==enumBean.transportationHiredVehicleTypeInternal.type
+												   										or orderBackingBean.selectedOrder.transportationCompanyTypeType==enumBean.transportationCompanyTypeTransport.type}">
+								<div class="ui-grid-row">
+									<div class="ui-grid-col-1 resp_ui-grid-col-1">
+										<p:outputLabel value="#{msgs['order.tranManagerUser']}"
+													   rendered="#{orderBackingBean.selectedOrder.transportationHiredVehicleTypeType==enumBean.transportationHiredVehicleTypeInternal.type
+												   				or orderBackingBean.selectedOrder.transportationCompanyTypeType==enumBean.transportationCompanyTypeTransport.type}" />
+									</div>
+									<div class="ui-grid-col-3">
+										<p:selectOneMenu id="orderTransportManagerSelectOneMenu" filter="true" filterMatchMode="contains" caseSensitive="false" value="#{orderBackingBean.selectedOrder.transportManager}" disabled="#{!canEdit}" converter="userConverter"
+														 rendered="#{orderBackingBean.selectedOrder.transportationHiredVehicleTypeType==enumBean.transportationHiredVehicleTypeInternal.type
+													 				or orderBackingBean.selectedOrder.transportationCompanyTypeType==enumBean.transportationCompanyTypeTransport.type}">
+											<c:if test="#{orderBackingBean.selectedOrder.transportManager == null}">
+												<f:selectItem noSelectionOption="true" itemLabel="#{msgs['value.null']}" itemValue="#{null}" itemDisabled="#{orderBackingBean.selectedOrder.transportManager != null}" />
+											</c:if>
+											<f:selectItems itemDisabled="#{!canEdit}" value="#{orderController.getAllUsersForTransportManager()}" var="orderTransportManager" itemLabel="#{orderTransportManager.lastName} #{orderTransportManager.firstName} #{orderTransportManager.patronymic}" itemValue="#{orderTransportManager}" />
+											<p:ajax event="change" listener="#{orderController.transportManagerChangeListener}"/>
+										</p:selectOneMenu>
+									</div>
+								</div>
+							</p:outputPanel>
+						</p:outputPanel>
+
+						<p:outputPanel id="orderTransportationCompanyTypeSelfPanel">
+							<p:outputPanel rendered="#{orderBackingBean.selectedOrder.transportationCompanyTypeType == enumBean.transportationCompanyTypeSelf.type}">
+								<div class="ui-grid-row resp_grid_row_std" style="margin-left: 10px;">
+									<div class="ui-grid-col-1 resp_ui-grid-col-1">
+										<p:outputLabel styleClass="field_readonly" value="#{msgs['order.selectVehicleAnDriver']}"
+													   rendered="#{orderBackingBean.selectedOrder.transportationCompanyTypeType == enumBean.transportationCompanyTypeSelf.type}"/>
+									</div>
+									<div class="ui-grid-col-3">
+										<p:outputPanel>
+											<table width="100%" border="0" cellpadding="0" cellspacing="0">
+												<tr>
+													<td>
+														<p:inputText styleClass="field_readonly" id="field_vehicle_driver" immediate="false" readonly="true"
+																	 value="#{orderBackingBean.selectedOrder.driverLastName} #{orderBackingBean.selectedOrder.driverFirstName} - #{orderBackingBean.selectedOrder.truckGovNumber}"
+																	 rendered="#{orderBackingBean.selectedOrder.transportationCompanyTypeType == enumBean.transportationCompanyTypeSelf.type}">
+														</p:inputText>
+													</td>
+													<td style="width: 30px;" align="right">
+														<p:commandButton style="width:30px;" icon="fa fa-list-ul" onsuccess="PF('dlg_dvo_choice').show();" rendered="#{orderBackingBean.selectedOrder.transportationCompanyTypeType == enumBean.transportationCompanyTypeSelf.type}"/>
+													</td>
+												</tr>
+											</table>
+										</p:outputPanel>
+									</div>
+								</div>
+								<div class="ui-grid-row resp_grid_row_std" style="margin-left: 10px;">
+									<div class="ui-grid-col-1 resp_ui-grid-col-1">
+										<p:outputLabel value="#{msgs['order.truckGovNumberLabel']}" rendered="#{orderBackingBean.selectedOrder.transportationCompanyTypeType == enumBean.transportationCompanyTypeSelf.type}"/>
+									</div>
+									<div class="ui-grid-col-3">
+										<p:inputText value="#{orderBackingBean.selectedOrder.truckGovNumber}" rendered="#{orderBackingBean.selectedOrder.transportationCompanyTypeType == enumBean.transportationCompanyTypeSelf.type}"/>
+									</div>
+								</div>
+								<div class="ui-grid-row resp_grid_row_std" style="margin-left: 10px;">
+									<div class="ui-grid-col-1 resp_ui-grid-col-1">
+										<p:outputLabel value="#{msgs['order.trailerGovNumberLabel']}" rendered="#{orderBackingBean.selectedOrder.transportationCompanyTypeType == enumBean.transportationCompanyTypeSelf.type}"/>
+									</div>
+									<div class="ui-grid-col-3">
+										<p:inputText value="#{orderBackingBean.selectedOrder.trailerGovNumber}" rendered="#{orderBackingBean.selectedOrder.transportationCompanyTypeType == enumBean.transportationCompanyTypeSelf.type}"/>
+									</div>
+								</div>
+							</p:outputPanel>
+						</p:outputPanel>
+
+						<p:accordionPanel id="orderTransportationCompanyTypeSelfPanelAccordion" multiple="true" activeIndex="2">
+							<p:tab rendered="#{orderBackingBean.selectedOrder.transportationCompanyTypeType == enumBean.transportationCompanyTypeSelf.type}">
+								<f:facet name="title">
+									<h:outputText value="#{msgs['order.vehicle.details']}" />
+								</f:facet>
+								<div class="ui-grid-row resp_grid_row_std" style="margin-left: 10px;">
+									<div class="ui-grid-col-1 resp_ui-grid-col-1">
+										<p:outputLabel value="#{msgs['order.vehicle.brand']}" />
+									</div>
+									<div class="ui-grid-col-3">
+										<p:inputText value="#{orderBackingBean.selectedOrder.truckBrand}"/>
+									</div>
+								</div>
+								<div class="ui-grid-row resp_grid_row_std" style="margin-left: 10px;">
+									<div class="ui-grid-col-1 resp_ui-grid-col-1">
+										<p:outputLabel value="#{msgs['order.vehicle.model']}" />
+									</div>
+									<div class="ui-grid-col-3">
+										<p:inputText value="#{orderBackingBean.selectedOrder.truckModel}"/>
+									</div>
+								</div>
+								<div class="ui-grid-row resp_grid_row_std" style="margin-left: 10px;">
+									<div class="ui-grid-col-1 resp_ui-grid-col-1">
+										<p:outputLabel value="#{msgs['order.vehicle.bottomLoading']}" />
+									</div>
+									<div class="ui-grid-col-3">
+										<p:selectBooleanCheckbox value="#{orderBackingBean.selectedOrder.trailerBottomLoading}"/>
+									</div>
+								</div>
+								<div class="ui-grid-row resp_grid_row_std" style="margin-left: 10px;">
+									<div class="ui-grid-col-1 resp_ui-grid-col-1">
+										<p:outputLabel value="#{msgs['order.vehicle.calibration']}" />
+									</div>
+									<div class="ui-grid-col-3">
+										<p:inputText value="#{orderBackingBean.selectedOrder.trailerCalibration}">
+											<f:convertNumber groupingUsed="true" minFractionDigits="0" />
+										</p:inputText>
+									</div>
+								</div>
+								<div class="ui-grid-row resp_grid_row_std" style="margin-left: 10px;">
+									<div class="ui-grid-col-1 resp_ui-grid-col-1">
+										<p:outputLabel value="#{msgs['order.vehicle.bottomLoadingCalibration']}" />
+									</div>
+									<div class="ui-grid-col-3">
+										<p:inputText value="#{orderBackingBean.selectedOrder.trailerBottomLoadingCalibration}">
+											<f:convertNumber groupingUsed="true" minFractionDigits="0" />
+										</p:inputText>
+									</div>
+								</div>
+							</p:tab>
+						</p:accordionPanel>
+
+						<p:outputPanel id="orderTransportationCompanyTypeSelfPanelDriverShortInfo">
+							<p:outputPanel styleClass="resp_grid_row_std" rendered="#{orderBackingBean.selectedOrder.transportationCompanyTypeType == enumBean.transportationCompanyTypeSelf.type}">
+								<div class="ui-grid-row resp_grid_row_std" style="margin-left: 10px;">
+									<div class="ui-grid-col-1 resp_ui-grid-col-1">
+										<p:outputLabel value="#{msgs['order.vehicle.driver.lastName']}" rendered="#{orderBackingBean.selectedOrder.transportationCompanyTypeType == enumBean.transportationCompanyTypeSelf.type}"/>
+									</div>
+									<div class="ui-grid-col-3">
+										<p:inputText value="#{orderBackingBean.selectedOrder.driverLastName}" rendered="#{orderBackingBean.selectedOrder.transportationCompanyTypeType == enumBean.transportationCompanyTypeSelf.type}"/>
+									</div>
+								</div>
+
+								<div class="ui-grid-row resp_grid_row_std" style="margin-left: 10px;">
+									<div class="ui-grid-col-1 resp_ui-grid-col-1">
+										<p:outputLabel value="#{msgs['order.vehicle.driver.firstName']}" rendered="#{orderBackingBean.selectedOrder.transportationCompanyTypeType == enumBean.transportationCompanyTypeSelf.type}"/>
+									</div>
+									<div class="ui-grid-col-3">
+										<p:inputText value="#{orderBackingBean.selectedOrder.driverFirstName}" rendered="#{orderBackingBean.selectedOrder.transportationCompanyTypeType == enumBean.transportationCompanyTypeSelf.type}"/>
+									</div>
+								</div>
+
+								<div class="ui-grid-row resp_grid_row_std" style="margin-left: 10px;">
+									<div class="ui-grid-col-1 resp_ui-grid-col-1">
+										<p:outputLabel value="#{msgs['order.vehicle.driver.patronymic']}" rendered="#{orderBackingBean.selectedOrder.transportationCompanyTypeType == enumBean.transportationCompanyTypeSelf.type}"/>
+									</div>
+									<div class="ui-grid-col-3">
+										<p:inputText value="#{orderBackingBean.selectedOrder.driverPatronymic}" rendered="#{orderBackingBean.selectedOrder.transportationCompanyTypeType == enumBean.transportationCompanyTypeSelf.type}"/>
+									</div>
+								</div>
+							</p:outputPanel>
+						</p:outputPanel>
+
+						<p:accordionPanel id="orderTransportationCompanyTypeSelfPanelDriverAccordion" activeIndex="2">
+							<p:tab rendered="#{orderBackingBean.selectedOrder.transportationCompanyTypeType == enumBean.transportationCompanyTypeSelf.type}" >
+								<f:facet name="title">
+									<h:outputText value="#{msgs['order.driver.details']}" />
+								</f:facet>
+								<div class="ui-grid-row resp_grid_row_std" style="margin-left: 10px;">
+									<div class="ui-grid-col-1 resp_ui-grid-col-1">
+										<p:outputLabel value="#{msgs['order.driver.dateOfBirth']}"/>
+									</div>
+									<div class="ui-grid-col-3">
+										<p:calendar value="#{orderBackingBean.selectedOrder.driverDateOfBirth}" pattern="dd.MM.yyyy" locale="ru"/>
+									</div>
+								</div>
+								<div class="ui-grid-row resp_grid_row_std" style="margin-left: 10px;">
+									<div class="ui-grid-col-1 resp_ui-grid-col-1">
+										<p:outputLabel value="#{msgs['order.driver.phone1']}" />
+									</div>
+									<div class="ui-grid-col-3">
+										<p:inputText value="#{orderBackingBean.selectedOrder.driverPhone1}"/>
+									</div>
+								</div>
+								<div class="ui-grid-row resp_grid_row_std" style="margin-left: 10px;">
+									<div class="ui-grid-col-1 resp_ui-grid-col-1">
+										<p:outputLabel value="#{msgs['order.driver.phone2']}" />
+									</div>
+									<div class="ui-grid-col-3">
+										<p:inputText value="#{orderBackingBean.selectedOrder.driverPhone2}"  />
+									</div>
+								</div>
+								<div class="ui-grid-row resp_grid_row_std" style="margin-left: 10px;">
+									<div class="ui-grid-col-1 resp_ui-grid-col-1">
+										<p:outputLabel value="#{msgs['order.driver.docSerial']}" />
+									</div>
+									<div class="ui-grid-col-3">
+										<p:inputText value="#{orderBackingBean.selectedOrder.driverDocSerial}"  />
+									</div>
+								</div>
+								<div class="ui-grid-row resp_grid_row_std" style="margin-left: 10px;">
+									<div class="ui-grid-col-1 resp_ui-grid-col-1">
+										<p:outputLabel value="#{msgs['order.driver.docNumber']}" />
+									</div>
+									<div class="ui-grid-col-3">
+										<p:inputText value="#{orderBackingBean.selectedOrder.driverDocNumber}"  />
+									</div>
+								</div>
+								<div class="ui-grid-row resp_grid_row_std" style="margin-left: 10px;">
+									<div class="ui-grid-col-1 resp_ui-grid-col-1">
+										<p:outputLabel value="#{msgs['order.driver.docGivenDate']}" />
+									</div>
+									<div class="ui-grid-col-3">
+										<p:calendar value="#{orderBackingBean.selectedOrder.driverDocGivenDate}" pattern="dd.MM.yyyy" locale="ru"  />
+									</div>
+								</div>
+								<div class="ui-grid-row resp_grid_row_std" style="margin-left: 10px;">
+									<div class="ui-grid-col-1 resp_ui-grid-col-1">
+										<p:outputLabel value="#{msgs['order.driver.docGivenFrom']}" />
+									</div>
+									<div class="ui-grid-col-3">
+										<p:inputText value="#{orderBackingBean.selectedOrder.driverDocGivenFrom}"  />
+									</div>
+								</div>
+								<div class="ui-grid-row resp_grid_row_std" style="margin-left: 10px;">
+									<div class="ui-grid-col-1 resp_ui-grid-col-1">
+										<p:outputLabel value="#{msgs['order.driver.docCode']}" />
+									</div>
+									<div class="ui-grid-col-3">
+										<p:inputText value="#{orderBackingBean.selectedOrder.driverDocCode}"  />
+									</div>
+								</div>
+								<div class="ui-grid-row resp_grid_row_std" style="margin-left: 10px;">
+									<div class="ui-grid-col-1 resp_ui-grid-col-1">
+										<p:outputLabel value="#{msgs['order.driver.docDescription']}" />
+									</div>
+									<div class="ui-grid-col-3">
+										<p:inputTextarea rows="2" value="#{orderBackingBean.selectedOrder.driverDocDescription}"  />
+									</div>
+								</div>
+							</p:tab>
+						</p:accordionPanel>
+
+						<p:separator />
+
+						<p:outputPanel styleClass="resp_grid_row_std">
+							<div class="ui-grid-row">
+								<div class="ui-grid-col-1 resp_ui-grid-col-1">
+									<p:outputLabel for="field_customer" value="#{msgs['order.customer']}" />
+								</div>
+								<div class="ui-grid-col-3">
+									<p:outputPanel>
+										<table width="100%" border="0" cellpadding="0" cellspacing="0">
+											<tr>
+												<td><p:inputText id="field_customer" readonly="true"/></td>
+												<td style="width: 30px;" align="right"><p:commandButton style="width:30px;" icon="fa fa-list-ul" onsuccess="PF('dlg_customer_choice').show();" /></td>
+											</tr>
+										</table>
+									</p:outputPanel>
+								</div>
+							</div>
+						</p:outputPanel>
+
+						<p:outputPanel styleClass="resp_grid_row_std">
+							<div class="ui-grid-row">
+								<div class="ui-grid-col-1 resp_ui-grid-col-1">
+									<p:outputLabel for="orderContractorSelectOneMenu" value="#{msgs['order.contractor']}" />
+								</div>
+								<div class="ui-grid-col-3">
+									<p:selectOneMenu id="orderContractorSelectOneMenu" filter="true" filterMatchMode="contains" caseSensitive="false" value="#{orderBackingBean.selectedOrder.contractor}" disabled="#{!canEdit}" converter="contractorConverter">
+										<c:if test="#{orderBackingBean.selectedOrder.contractor == null}">
+											<f:selectItem noSelectionOption="true" itemLabel="#{msgs['value.null']}" itemValue="#{null}" itemDisabled="#{orderBackingBean.selectedOrder.contractor != null}" />
+										</c:if>
+										<f:selectItems itemDisabled="#{!canEdit}" value="#{orderController.getAllContractorsOfSelectedCustomer()}" var="orderContractor" itemLabel="#{orderContractor.nameWork}" itemValue="#{orderContractor}" />
+										<p:ajax event="change" listener="#{orderController.contractorChangeListener}"/>
+									</p:selectOneMenu>
+								</div>
+							</div>
+						</p:outputPanel>
+
+						<p:outputPanel styleClass="resp_grid_row_std">
+							<div class="ui-grid-row">
+								<div class="ui-grid-col-1 resp_ui-grid-col-1">
+									<p:outputLabel for="orderTransportationContractorSelectOneMenu" value="#{msgs['order.contractorTrans']}" />
+								</div>
+								<div class="ui-grid-col-3">
+									<p:selectOneMenu id="orderTransportationContractorSelectOneMenu" filter="true" filterMatchMode="contains" caseSensitive="false" value="#{orderBackingBean.selectedOrder.transportationContractor}" disabled="#{!canEdit}" converter="contractorConverter">
+										<c:if test="#{orderBackingBean.selectedOrder.transportationContractor == null}">
+											<f:selectItem noSelectionOption="true" itemLabel="#{msgs['value.null']}" itemValue="#{null}" itemDisabled="#{orderBackingBean.selectedOrder.transportationContractor != null}" />
+										</c:if>
+										<f:selectItems itemDisabled="#{!canEdit}" value="#{orderController.getAllContractorsOfSelectedCustomer()}" var="orderContractor" itemLabel="#{orderContractor.nameWork}" itemValue="#{orderContractor}" />
+										<p:ajax event="change" listener="#{orderController.transportationContractorChangeListener}"/>
+									</p:selectOneMenu>
+								</div>
+							</div>
+						</p:outputPanel>
+
+						<p:outputPanel styleClass="resp_grid_row_std">
+							<div class="ui-grid-row">
+								<div class="ui-grid-col-1 resp_ui-grid-col-1">
+									<p:outputLabel for="orderAgreementSelectOneMenu" value="#{msgs['order.agreement']}" />
+								</div>
+								<div class="ui-grid-col-3">
+									<p:selectOneMenu id="orderAgreementSelectOneMenu" filter="true" filterMatchMode="contains" caseSensitive="false" value="#{orderBackingBean.selectedOrder.agreement}" disabled="#{!canEdit}" converter="agreementConverter">
+										<c:if test="#{orderBackingBean.selectedOrder.agreement == null}">
+											<f:selectItem noSelectionOption="true" itemLabel="#{msgs['value.null']}" itemValue="#{null}" itemDisabled="#{orderBackingBean.selectedOrder.agreement != null}" />
+										</c:if>
+										<f:selectItems itemDisabled="#{!canEdit}" value="#{orderController.getAllAgreementsOfTypeSale()}" var="orderAgreement" itemLabel="#{orderAgreement.agreementNumber}" itemValue="#{orderAgreement}" />
+										<p:ajax event="change" listener="#{orderController.agreementChangeListener}"/>
+									</p:selectOneMenu>
+								</div>
+							</div>
+						</p:outputPanel>
+
+						<p:outputPanel styleClass="resp_grid_row_std">
+							<div class="ui-grid-row">
+								<div class="ui-grid-col-1 resp_ui-grid-col-1">
+									<p:outputLabel for="orderTransportationAgreementSelectOneMenu" value="#{msgs['order.agreementTrans']}" />
+								</div>
+								<div class="ui-grid-col-3">
+									<p:selectOneMenu id="orderTransportationAgreementSelectOneMenu" filter="true" filterMatchMode="contains" caseSensitive="false" value="#{orderBackingBean.selectedOrder.transportationAgreement}" disabled="#{!canEdit}" converter="agreementConverter">
+										<c:if test="#{orderBackingBean.selectedOrder.transportationAgreement == null}">
+											<f:selectItem noSelectionOption="true" itemLabel="#{msgs['value.null']}" itemValue="#{null}" itemDisabled="#{orderBackingBean.selectedOrder.transportationAgreement != null}" />
+										</c:if>
+										<f:selectItems itemDisabled="#{!canEdit}" value="#{orderController.getAllAgreementsOfTypeTransport()}" var="orderTransportationAgreement" itemLabel="#{orderTransportationAgreement.agreementNumber}" itemValue="#{orderTransportationAgreement}" />
+										<p:ajax event="change" listener="#{orderController.transportationAgreementChangeListener}"/>
+									</p:selectOneMenu>
+								</div>
+							</div>
+						</p:outputPanel>
+
+						<p:outputPanel styleClass="resp_grid_row_std">
+							<div class="ui-grid-row">
+								<div class="ui-grid-col-1 resp_ui-grid-col-1">
+									<p:outputLabel value="#{msgs['order.agreementAdd']}" />
+								</div>
+								<div class="ui-grid-col-3">
+									<p:outputPanel>
+										<table width="100%" border="0" cellpadding="0" cellspacing="0">
+											<tr>
+												<td width="60%">
+													<p:selectOneMenu value="#{orderBackingBean.selectedOrder.additionalAgreementStatus}" disabled="#{!canEdit}" converter="agreementStatusConverter">
+														<c:if test="#{orderBackingBean.selectedOrder.additionalAgreementStatus == null}">
+															<f:selectItem noSelectionOption="true" itemLabel="#{msgs['value.null']}" itemValue="#{null}" itemDisabled="#{orderBackingBean.selectedOrder.additionalAgreementStatus != null}" />
+														</c:if>
+														<f:selectItems itemDisabled="#{!canEdit}" value="#{orderController.getAllAgreementStatuses()}" var="orderAdditionalAgreementStatus" itemLabel="#{orderAdditionalAgreementStatus.name}" itemValue="#{orderAdditionalAgreementStatus}" />
+														<p:ajax event="change" listener="#{orderController.additionalAgreementChangeListener}"/>
+													</p:selectOneMenu>
+												</td>
+												<td>&nbsp;№&nbsp;</td>
+												<td width="35%">
+													<p:inputText value="#{orderBackingBean.selectedOrder.additionalAgreementNumber}"/>
+												</td>
+											</tr>
+										</table>
+									</p:outputPanel>
+								</div>
+							</div>
+						</p:outputPanel>
+
+						<p:outputPanel styleClass="resp_grid_row_std">
+							<div class="ui-grid-row">
+								<div class="ui-grid-col-1 resp_ui-grid-col-1">
+									<p:outputLabel for="orderPaymentTypeSelectOneMenu" value="#{msgs['order.paymentType']}" />
+								</div>
+								<div class="ui-grid-col-3">
+									<p:selectOneMenu id="orderPaymentTypeSelectOneMenu" value="#{orderBackingBean.selectedOrder.orderPaymentType}" disabled="#{!canEdit}" converter="orderPaymentTypeConverter">
+										<c:if test="#{orderBackingBean.selectedOrder.orderPaymentType == null}">
+											<f:selectItem noSelectionOption="true" itemLabel="#{msgs['value.null']}" itemValue="#{null}" itemDisabled="#{orderBackingBean.selectedOrder.orderPaymentType != null}" />
+										</c:if>
+										<f:selectItems itemDisabled="#{!canEdit}" value="#{orderController.getAllOrderPaymentTypes()}" var="orderPaymentType" itemLabel="#{orderPaymentType.name}" itemValue="#{orderPaymentType}" />
+										<p:ajax event="change" listener="#{orderController.orderPaymentTypeChangeListener}"/>
+									</p:selectOneMenu>
+								</div>
+							</div>
+						</p:outputPanel>
+
+						<p:outputPanel styleClass="resp_grid_row_std">
+							<div class="ui-grid-row">
+								<div class="ui-grid-col-1 resp_ui-grid-col-1">
+									<p:outputLabel for="field_paymentDatePlan" value="#{msgs['order.paymentDatePlan']}" />
+								</div>
+								<div class="ui-grid-col-3">
+									<p:calendar id="field_paymentDatePlan" value="#{orderBackingBean.selectedOrder.orderPaymentDatePlan}" pattern="dd.MM.yyyy HH:mm" locale="ru" />
+								</div>
+							</div>
+						</p:outputPanel>
+
+						<p:outputPanel styleClass="resp_grid_row_std">
+							<div class="ui-grid-row">
+								<div class="ui-grid-col-1 resp_ui-grid-col-1">
+									<p:outputLabel value="#{msgs['order.provider']}" />
+								</div>
+								<div class="ui-grid-col-3">
+									<p:selectOneMenu id="orderPrividerSelectOneMenu" filter="true" filterMatchMode="contains" caseSensitive="false" value="#{orderBackingBean.selectedOrder.provider}" disabled="#{!canEdit}" converter="contractorConverter">
+										<c:if test="#{orderBackingBean.selectedOrder.provider == null}">
+											<f:selectItem noSelectionOption="true" itemLabel="#{msgs['value.null']}" itemValue="#{null}" itemDisabled="#{orderBackingBean.selectedOrder.provider != null}" />
+										</c:if>
+										<f:selectItems itemDisabled="#{!canEdit}" value="#{orderController.getAllProviders()}" var="orderProvider" itemLabel="#{orderProvider.nameWork}" itemValue="#{orderProvider}" />
+										<p:ajax event="change" listener="#{orderController.providerChangeListener}"/>
+									</p:selectOneMenu>
+								</div>
+							</div>
+						</p:outputPanel>
+
+						<p:outputPanel styleClass="resp_grid_row_std">
+							<div class="ui-grid-row">
+								<div class="ui-grid-col-1 resp_ui-grid-col-1">
+									<p:outputLabel for="field_vehicleCount" value="#{msgs['order.vehicleCount']}" />
+								</div>
+								<div class="ui-grid-col-3">
+									<p:spinner id="field_vehicleCount" value="#{orderBackingBean.selectedOrder.numberOfVehicles}"/>
+								</div>
+							</div>
+						</p:outputPanel>
+
+						<p:outputPanel styleClass="resp_grid_row_std">
+							<div class="ui-grid-row">
+								<div class="ui-grid-col-1 resp_ui-grid-col-1">
+									<p:outputLabel for="field_vehicleVolume" value="#{msgs['order.vehicleVolume']}" />
+								</div>
+								<div class="ui-grid-col-3">
+									<p:outputPanel>
+										<table width="100%" border="0" cellpadding="0" cellspacing="0">
+											<tr>
+												<td width="30%">
+													<p:selectOneMenu id="field_vehicleVolume" value="#{orderBackingBean.selectedOrder.vehicleVolume}" editable="true">
+														<f:selectItem itemLabel="30" itemValue="30" />
+														<f:selectItem itemLabel="40" itemValue="40" />
+													</p:selectOneMenu>
+												</td>
+												<td>
+													<p:selectOneButton>
+														<f:selectItem itemLabel="Вся машина" itemValue="0" />
+														<f:selectItem itemLabel="По секциям" itemValue="1" />
+													</p:selectOneButton>
+												</td>
+											</tr>
+										</table>
+									</p:outputPanel>
+								</div>
+							</div>
+						</p:outputPanel>
+
+						<p:outputPanel styleClass="resp_grid_row_std">
+							<div class="ui-grid-row">
+								<div class="ui-grid-col-1 resp_ui-grid-col-1">
+									<p:outputLabel value="#{msgs['order.goodVolume']}" />
+								</div>
+								<div class="ui-grid-col-3">
+									<p:outputLabel styleClass="field_readonly" value="">
+										<f:convertNumber minFractionDigits="0" groupingUsed="true" />
+									</p:outputLabel>
+								</div>
+							</div>
+						</p:outputPanel>
+
+						<p:outputPanel id="productVolumePlanPanel" styleClass="resp_grid_row_std">
+							<div class="ui-grid-row">
+								<div class="ui-grid-col-1 resp_ui-grid-col-1">
+									<p:outputLabel for="field_goodVolumePlan" value="#{msgs['order.goodVolumePlan']}" />
+								</div>
+								<div class="ui-grid-col-3">
+									<p:outputPanel>
+										<p:inputText id="field_goodVolumePlan" value="#{orderBackingBean.selectedOrder.productVolumePlan}">
+											<f:convertNumber minFractionDigits="0" groupingUsed="true" />
+										</p:inputText>
+									</p:outputPanel>
+								</div>
+							</div>
+						</p:outputPanel>
+
+						<p:outputPanel id="productVolumeFactPanel" styleClass="resp_grid_row_std">
+							<div class="ui-grid-row">
+								<div class="ui-grid-col-1 resp_ui-grid-col-1">
+									<p:outputLabel value="#{msgs['order.goodVolumeFact']}" />
+								</div>
+								<div class="ui-grid-col-3">
+									<p:outputPanel id="field_goodVolumeFact">
+										<p:inputText value="#{orderBackingBean.selectedOrder.productVolumeFact}">
+											<f:convertNumber minFractionDigits="0" groupingUsed="true" />
+										</p:inputText>
+									</p:outputPanel>
+								</div>
+							</div>
+						</p:outputPanel>
+
+						<p:outputPanel styleClass="resp_grid_row_std">
+							<div class="ui-grid-row">
+								<div class="ui-grid-col-1 resp_ui-grid-col-1">
+									<p:outputLabel value="#{msgs['order.goodCount']}" />
+								</div>
+								<div class="ui-grid-col-3">
+									<p:outputLabel styleClass="field_readonly" value="">
+										<f:convertNumber minFractionDigits="3" groupingUsed="true" />
+									</p:outputLabel>
+								</div>
+							</div>
+						</p:outputPanel>
+
+						<p:outputPanel id="productCountPlanPanel" styleClass="resp_grid_row_std">
+							<div class="ui-grid-row">
+								<div class="ui-grid-col-1 resp_ui-grid-col-1">
+									<p:outputLabel for="field_goodCountPlan" value="#{msgs['order.goodCountPlan']}" />
+								</div>
+								<div class="ui-grid-col-3">
+									<p:inputText id="field_goodCountPlan" value="#{orderBackingBean.selectedOrder.productCountPlan}">
+										<f:convertNumber minFractionDigits="3" groupingUsed="true" />
+									</p:inputText>
+								</div>
+							</div>
+						</p:outputPanel>
+
+						<p:outputPanel id="productCountFactPanel" styleClass="resp_grid_row_std">
+							<div class="ui-grid-row">
+								<div class="ui-grid-col-1 resp_ui-grid-col-1">
+									<p:outputLabel value="#{msgs['order.goodCountFact']}" />
+								</div>
+								<div class="ui-grid-col-3">
+									<p:inputText value="#{orderBackingBean.selectedOrder.productCountFact}">
+										<f:convertNumber minFractionDigits="3" groupingUsed="true" />
+									</p:inputText>
+								</div>
+							</div>
+						</p:outputPanel>
+
+						<p:separator />
+
+						<p:outputPanel styleClass="resp_grid_row_std">
+							<div class="ui-grid-row">
+								<div class="ui-grid-col-1 resp_ui-grid-col-1">
+									<p:outputLabel for="field_loadPointOtherName" value="#{msgs['order.loadPointType']}" />
+								</div>
+								<div class="ui-grid-col-3">
+									<p:outputPanel>
+										<p:selectOneRadio id="load_point" value="#{orderBackingBean.selectedOrder.loadPointType}" layout="pageDirection">
+											<f:selectItem itemLabel="#{orderBackingBean.selectedOrder.shipmentBaseNameShort} (По умолчанию для #{orderBackingBean.selectedOrder.productNameShort})" itemValue="false" />
+											<f:selectItem itemLabel="#{msgs['order.loadPointOtherName']}" itemValue="true" />
+										</p:selectOneRadio>
+									</p:outputPanel>
+								</div>
+							</div>
+						</p:outputPanel>
+
+						<p:outputPanel styleClass="resp_grid_row_std">
+							<div class="ui-grid-row">
+								<div class="ui-grid-col-1 resp_ui-grid-col-1">
+									<p:outputLabel value="" />
+								</div>
+								<div class="ui-grid-col-3">
+									<p:inputText id="field_loadPointOtherName" value="#{orderBackingBean.selectedOrder.loadPointOtherName}"/>
+								</div>
+							</div>
+						</p:outputPanel>
+
+						<p:outputPanel styleClass="resp_grid_row_std">
+							<div class="ui-grid-row">
+								<div class="ui-grid-col-1 resp_ui-grid-col-1">
+									<p:outputLabel value="#{msgs['order.loadDate']}" />
+								</div>
+								<div class="ui-grid-col-3">
+									<p:outputLabel styleClass="field_readonly" value="">
+										<f:convertDateTime pattern="dd.MM.yyyy HH:mm" />
+									</p:outputLabel>
+								</div>
+							</div>
+						</p:outputPanel>
+
+						<p:outputPanel styleClass="resp_grid_row_std">
+							<div class="ui-grid-row">
+								<div class="ui-grid-col-1 resp_ui-grid-col-1">
+									<p:outputLabel for="field_loadPlanDate" value="#{msgs['order.loadPlanDate']}" />
+								</div>
+								<div class="ui-grid-col-3">
+									<p:calendar id="field_loadPlanDate" value="#{orderBackingBean.selectedOrder.loadDatePlan}" pattern="dd.MM.yyyy HH:mm" locale="ru"/>
+								</div>
+							</div>
+						</p:outputPanel>
+
+						<p:outputPanel styleClass="resp_grid_row_std">
+							<div class="ui-grid-row">
+								<div class="ui-grid-col-1 resp_ui-grid-col-1">
+									<p:outputLabel value="#{msgs['order.loadFactDate']}" />
+								</div>
+								<div class="ui-grid-col-3">
+									<p:calendar value="#{orderBackingBean.selectedOrder.loadDateFact}" pattern="dd.MM.yyyy HH:mm" locale="ru" />
+								</div>
+							</div>
+						</p:outputPanel>
+
+						<p:outputPanel styleClass="resp_grid_row_std">
+							<div class="ui-grid-row">
+								<div class="ui-grid-col-1 resp_ui-grid-col-1">
+									<p:outputLabel value="#{msgs['order.loadGoodCount']}" />
+								</div>
+								<div class="ui-grid-col-3">
+									<p:inputText value="#{orderBackingBean.selectedOrder.loadProductCount}">
+										<f:convertNumber minFractionDigits="2" groupingUsed="true" />
+									</p:inputText>
+								</div>
+							</div>
+						</p:outputPanel>
+
+						<p:outputPanel styleClass="resp_grid_row_std">
+							<div class="ui-grid-row">
+								<div class="ui-grid-col-1 resp_ui-grid-col-1">
+									<p:outputLabel value="#{msgs['order.loadDescription']}" />
+								</div>
+								<div class="ui-grid-col-3">
+									<p:inputTextarea rows="2" value="#{orderBackingBean.selectedOrder.loadDescription}" />
+								</div>
+							</div>
+						</p:outputPanel>
+
+						<p:separator />
+
+						<p:outputPanel styleClass="resp_grid_row_std">
+							<div class="ui-grid-row">
+								<div class="ui-grid-col-1 resp_ui-grid-col-1">
+									<p:outputLabel for="field_unloadPointName" value="#{msgs['order.unloadPointName']}" />
+								</div>
+								<div class="ui-grid-col-3">
+									<p:inputText id="field_unloadPointName" value="#{orderBackingBean.selectedOrder.unloadPointOtherName}"/>
+								</div>
+							</div>
+						</p:outputPanel>
+
+						<p:outputPanel styleClass="resp_grid_row_std">
+							<div class="ui-grid-row">
+								<div class="ui-grid-col-1 resp_ui-grid-col-1">
+									<p:outputLabel value="#{msgs['order.unloadDate']}" />
+								</div>
+								<div class="ui-grid-col-3">
+									<p:outputLabel styleClass="field_readonly" value="" >
+										<f:convertDateTime pattern="dd.MM.yyyy HH:mm" />
+									</p:outputLabel>
+								</div>
+							</div>
+						</p:outputPanel>
+
+						<p:outputPanel styleClass="resp_grid_row_std">
+							<div class="ui-grid-row">
+								<div class="ui-grid-col-1 resp_ui-grid-col-1">
+									<p:outputLabel for="field_unloadPlanDate" value="#{msgs['order.unloadPlanDate']}" />
+								</div>
+								<div class="ui-grid-col-3">
+									<p:calendar id="field_unloadPlanDate" value="#{orderBackingBean.selectedOrder.unloadDatePlan}" pattern="dd.MM.yyyy HH:mm" locale="ru"/>
+								</div>
+							</div>
+						</p:outputPanel>
+
+						<p:outputPanel styleClass="resp_grid_row_std">
+							<div class="ui-grid-row">
+								<div class="ui-grid-col-1 resp_ui-grid-col-1">
+									<p:outputLabel value="#{msgs['order.unloadFactDate']}" />
+								</div>
+								<div class="ui-grid-col-3">
+									<p:calendar value="#{orderBackingBean.selectedOrder.unloadDateFact}" pattern="dd.MM.yyyy HH:mm" locale="ru"/>
+								</div>
+							</div>
+						</p:outputPanel>
+
+						<p:outputPanel styleClass="resp_grid_row_std">
+							<div class="ui-grid-row">
+								<div class="ui-grid-col-1 resp_ui-grid-col-1">
+									<p:outputLabel for="field_unloadContacts" value="#{msgs['order.unloadContacts']}" />
+								</div>
+								<div class="ui-grid-col-3">
+									<p:inputText id="field_unloadContacts" value="#{orderBackingBean.selectedOrder.unloadContacts}"/>
+								</div>
+							</div>
+						</p:outputPanel>
+
+						<p:outputPanel styleClass="resp_grid_row_std">
+							<div class="ui-grid-row">
+								<div class="ui-grid-col-1 resp_ui-grid-col-1">
+									<p:outputLabel value="#{msgs['order.unloadGoodCount']}" />
+								</div>
+								<div class="ui-grid-col-3">
+									<p:inputText value="#{orderBackingBean.selectedOrder.unloadProductCount}">
+										<f:convertNumber minFractionDigits="2" groupingUsed="true" />
+									</p:inputText>
+								</div>
+							</div>
+						</p:outputPanel>
+
+						<p:outputPanel styleClass="resp_grid_row_std">
+							<div class="ui-grid-row">
+								<div class="ui-grid-col-1 resp_ui-grid-col-1">
+									<p:outputLabel value="#{msgs['order.unloadGoodVolume']}" />
+								</div>
+								<div class="ui-grid-col-3">
+									<p:inputText value="#{orderBackingBean.selectedOrder.unloadProductVolume}"/>
+								</div>
+							</div>
+						</p:outputPanel>
+
+						<p:outputPanel styleClass="resp_grid_row_std">
+							<div class="ui-grid-row">
+								<div class="ui-grid-col-1 resp_ui-grid-col-1">
+									<p:outputLabel value="#{msgs['order.unloadDescription']}" />
+								</div>
+								<div class="ui-grid-col-3">
+									<p:inputTextarea rows="2" value="#{orderBackingBean.selectedOrder.unloadDescription}"/>
+								</div>
+							</div>
+						</p:outputPanel>
+
+						<p:outputPanel styleClass="resp_grid_row_std">
+							<div class="ui-grid-row">
+								<div class="ui-grid-col-1 resp_ui-grid-col-1">
+									<p:outputLabel value="#{msgs['order.costTransport']}" />
+								</div>
+								<div class="ui-grid-col-3">
+									<p:outputLabel styleClass="field_readonly" value=""/>
+								</div>
+							</div>
+						</p:outputPanel>
+
+						<p:outputPanel styleClass="resp_grid_row_std">
+							<div class="ui-grid-row">
+								<div class="ui-grid-col-1 resp_ui-grid-col-1">
+									<p:outputLabel value="#{msgs['order.costTransportPlan']}" />
+								</div>
+								<div class="ui-grid-col-3">
+									<p:inputText value="#{orderBackingBean.selectedOrder.transportCostPlan}"/>
+								</div>
+							</div>
+						</p:outputPanel>
+
+						<p:outputPanel styleClass="resp_grid_row_std">
+							<div class="ui-grid-row">
+								<div class="ui-grid-col-1 resp_ui-grid-col-1">
+									<p:outputLabel value="#{msgs['order.costTransportFact']}" />
+								</div>
+								<div class="ui-grid-col-3">
+									<p:inputText value="#{orderBackingBean.selectedOrder.transportCostFact}"/>
+								</div>
+							</div>
+						</p:outputPanel>
+
+						<p:outputPanel styleClass="resp_grid_row_std">
+							<div class="ui-grid-row">
+								<div class="ui-grid-col-1 resp_ui-grid-col-1">
+									<p:outputLabel value="#{msgs['order.costGood']}" />
+								</div>
+								<div class="ui-grid-col-3">
+									<p:outputLabel styleClass="field_readonly" value=""/>
+								</div>
+							</div>
+						</p:outputPanel>
+
+						<p:outputPanel styleClass="resp_grid_row_std">
+							<div class="ui-grid-row">
+								<div class="ui-grid-col-1 resp_ui-grid-col-1">
+									<p:outputLabel value="#{msgs['order.costGoodPlan']}" />
+								</div>
+								<div class="ui-grid-col-3">
+									<p:inputText value="#{orderBackingBean.selectedOrder.productCostPlan}"/>
+								</div>
+							</div>
+						</p:outputPanel>
+
+						<p:outputPanel styleClass="resp_grid_row_std">
+							<div class="ui-grid-row">
+								<div class="ui-grid-col-1 resp_ui-grid-col-1">
+									<p:outputLabel value="#{msgs['order.costGoodFact']}" />
+								</div>
+								<div class="ui-grid-col-3">
+									<p:inputText value="#{orderBackingBean.selectedOrder.productCostFact}"/>
+								</div>
+							</div>
+						</p:outputPanel>
+
+						<p:separator />
+
+						<p:outputPanel styleClass="resp_grid_row_std">
+							<div class="ui-grid-row">
+								<div class="ui-grid-col-1 resp_ui-grid-col-1">
+									<p:outputLabel value="#{msgs['order.priceTransport']}" />
+								</div>
+								<div class="ui-grid-col-3">
+									<p:outputLabel styleClass="field_readonly" value=""/>
+								</div>
+							</div>
+						</p:outputPanel>
+
+						<p:outputPanel styleClass="resp_grid_row_std">
+							<div class="ui-grid-row">
+								<div class="ui-grid-col-1 resp_ui-grid-col-1">
+									<p:outputLabel for="field_priceTransportPlan" value="#{msgs['order.priceTransportPlan']}" />
+								</div>
+								<div class="ui-grid-col-3">
+									<p:inputText id="field_priceTransportPlan" value="#{orderBackingBean.selectedOrder.transportPricePlan}"/>
+								</div>
+							</div>
+						</p:outputPanel>
+
+						<p:outputPanel styleClass="resp_grid_row_std">
+							<div class="ui-grid-row">
+								<div class="ui-grid-col-1 resp_ui-grid-col-1">
+									<p:outputLabel value="#{msgs['order.priceTransportFact']}" />
+								</div>
+								<div class="ui-grid-col-3">
+									<p:inputText value="#{orderBackingBean.selectedOrder.transportPriceFact}"/>
+								</div>
+							</div>
+						</p:outputPanel>
+
+						<p:outputPanel styleClass="resp_grid_row_std">
+							<div class="ui-grid-row">
+								<div class="ui-grid-col-1 resp_ui-grid-col-1">
+									<p:outputLabel value="#{msgs['order.priceGood']}" />
+								</div>
+								<div class="ui-grid-col-3">
+									<p:outputLabel styleClass="field_readonly" value=""/>
+								</div>
+							</div>
+						</p:outputPanel>
+
+						<p:outputPanel styleClass="resp_grid_row_std">
+							<div class="ui-grid-row">
+								<div class="ui-grid-col-1 resp_ui-grid-col-1">
+									<p:outputLabel for="field_priceGoodPlan" value="#{msgs['order.priceGoodPlan']}" />
+								</div>
+								<div class="ui-grid-col-3">
+									<p:inputText id="field_priceGoodPlan" value="#{orderBackingBean.selectedOrder.productPricePlan}"/>
+								</div>
+							</div>
+						</p:outputPanel>
+
+						<p:outputPanel styleClass="resp_grid_row_std">
+							<div class="ui-grid-row">
+								<div class="ui-grid-col-1 resp_ui-grid-col-1">
+									<p:outputLabel value="#{msgs['order.priceGoodFact']}" />
+								</div>
+								<div class="ui-grid-col-3">
+									<p:inputText value="#{orderBackingBean.selectedOrder.productPriceFact}"/>
+								</div>
+							</div>
+						</p:outputPanel>
+
+						<p:separator />
+
+						<p:outputPanel id="field_totals" styleClass="field_total_frame">
+							<p:outputPanel styleClass="resp_grid_row_std">
+								<div class="ui-grid-row">
+									<div class="ui-grid-col-1 resp_ui-grid-col-1">
+										<p:outputLabel styleClass="field_total" value="#{msgs['order.price.all']}" />
+									</div>
+									<div class="ui-grid-col-3">
+										<p:outputLabel styleClass="field_readonly" value="" />
+									</div>
+								</div>
+							</p:outputPanel>
+
+							<p:outputPanel styleClass="resp_grid_row_std">
+								<div class="ui-grid-row">
+									<div class="ui-grid-col-1 resp_ui-grid-col-1">
+										<p:outputLabel styleClass="field_total" value="#{msgs['order.markup']}" />
+									</div>
+									<div class="ui-grid-col-3">
+										<p:outputLabel styleClass="field_readonly" value="" />
+									</div>
+								</div>
+							</p:outputPanel>
+
+							<p:outputPanel styleClass="resp_grid_row_std">
+								<div class="ui-grid-row">
+									<div class="ui-grid-col-1 resp_ui-grid-col-1">
+										<p:outputLabel styleClass="field_total" value="#{msgs['order.price.summ']}" />
+									</div>
+									<div class="ui-grid-col-3">
+										<p:outputLabel styleClass="field_readonly" value="" />
+									</div>
+								</div>
+							</p:outputPanel>
+
+							<p:outputPanel styleClass="resp_grid_row_std">
+								<div class="ui-grid-row">
+									<div class="ui-grid-col-1 resp_ui-grid-col-1">
+										<p:outputLabel styleClass="field_total" value="#{msgs['order.debBalance']}" />
+									</div>
+									<div class="ui-grid-col-3">
+										<p:outputLabel styleClass="field_readonly" value="" />
+									</div>
+								</div>
+							</p:outputPanel>
+						</p:outputPanel>
+
+					</div>
+				</div>
+
+				<p:separator />
+				<div class="ui-grid ui-grid-responsive">
+					<div class="ui-grid-row">
+						<div class="ui-grid-col-1">
+							<table width="100%" border="0" cellpadding="0" cellspacing="0">
+								<tr>
+									<td>
+										<p:commandButton id="com_saveEdit" value="Сохранить" actionListener="#{orderController.buttonActionSaveOrder}" rendered="#{canAdd or canEdit}" />
+										<p:commandButton id="com_back" value="Назад" actionListener="#{orderController.buttonActionCancelSaveOrder}" rendered="#{!canAdd and !canEdit}" />
+									</td>
+									<td align="right">
+										<p:commandButton id="com_cancelSaveEdit" value="Отмена" actionListener="#{orderController.buttonActionCancelSaveOrder}" rendered="#{canAdd or canEdit}" immediate="true"/>
+									</td>
+								</tr>
+							</table>
+						</div>
+					</div>
+				</div>
+				<p:defaultCommand target="com_saveEdit" />
+
+			</h:form>
+
+		</ui:define>
+
+	</ui:composition>
+
+</h:body>
+
+</html>

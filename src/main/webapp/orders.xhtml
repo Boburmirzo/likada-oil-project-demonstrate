@@ -1,0 +1,543 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+	  xmlns:h="http://java.sun.com/jsf/html"
+	  xmlns:f="http://java.sun.com/jsf/core"
+	  xmlns:ui="http://java.sun.com/jsf/facelets"
+	  xmlns:p="http://primefaces.org/ui">
+<h:body>
+	<ui:composition template="/layout/forcab.xhtml">
+		<ui:define name="windowTitle">#{msgs['order.title']}</ui:define>
+		<ui:define name="content">
+
+			<ui:param name="canEdit" value="#{loginController.hasAccessTo(enumBean.modelOrder, enumBean.accessEdit)}" />
+			<ui:param name="canAdd" value="#{loginController.hasAccessTo(enumBean.modelOrder, enumBean.accessAdd)}" />
+			<ui:param name="canDelete" value="#{loginController.hasAccessTo(enumBean.modelOrder, enumBean.accessAdd)}" />
+
+			<p:dialog style="width:50%; max-width: 95%; max-height: 95%; overflow: auto;" id="dialog_delete_order" header="Удаление рейса" widgetVar="dlg_delete_order" resizable="false" modal="true" draggable="false">
+				<h:form id="form_order_delete">
+					<h:panelGrid columns="1" cellpadding="5" style="width: 100%;">
+						<h:outputLabel value="Вы действительно хотите удалить рейс ?" />
+						<h:outputLabel style="font-weight: bold;" value="Рейс: идент.: #{orderBackingBean.selectedOrder.id}" />
+						<h:panelGrid columns="2" cellpadding="5" style="margin: 0 auto;">
+							<p:commandButton icon="fa fa-times-circle fa-fw fa-fvm" value="Удалить" update=":form_edit_orders" actionListener="#{orderController.deleteSelectedOrder}" oncomplete="PF('dlg_delete_order').hide();" />
+							<p:commandButton value="Отмена" onclick="PF('dlg_delete_order').hide();" />
+						</h:panelGrid>
+					</h:panelGrid>
+				</h:form>
+			</p:dialog>
+
+			<h:form id="form_edit_orders">
+				<p:poll interval="10" listener="#{orderController.refreshOrdersTable}" update="table_orders" />
+
+				<p:outputPanel>
+					<table border="0" cellpadding="0" cellspacing="0">
+						<tr>
+							<td><p:inputText id="field_searchStringOrder" value="#{orderBackingBean.searchStringInOrderTable}" placeholder="Поиск по заявкам" style="margin-right:10px">
+									<p:ajax event="keyup" delay="1000" update="table_orders" listener="#{orderController.refreshOrdersTable}" />
+								</p:inputText></td>
+							<td>&nbsp;</td>
+							<td align="left"><p:commandButton type="button" icon="fa fa-close fa-fw">
+									<p:ajax event="click" listener="#{orderController.resetOrdersTableSearchFilter}" update="table_orders field_searchStringOrder" />
+								</p:commandButton></td>
+						</tr>
+					</table>
+				</p:outputPanel>
+
+				<div style="height: 5px;" />
+
+				<p:outputPanel>
+					<i class="fa fa-filter" />
+					<p:spacer width="5px" />
+					<p:selectOneButton value="#{orderBackingBean.selectedFilterPeriodOneButton}"> <!--TODO use PrimeFace importConstants for EL version > 3.0 -->
+						<f:selectItem itemLabel="Сегодня" itemValue="FOR_TODAY" />
+						<f:selectItem itemLabel="2 дня" itemValue="FOR_TWO_DAYS" />
+						<f:selectItem itemLabel="3 дня" itemValue="FOR_THREE_DAYS" />
+						<f:selectItem itemLabel="7 дней" itemValue="FOR_WEEK" />
+						<f:selectItem itemLabel="Все" itemValue="ALL" />
+						<p:ajax update="table_orders" listener="#{orderController.refreshOrdersTable}"/>
+					</p:selectOneButton>
+				</p:outputPanel>
+
+				<div style="height: 5px;" />
+				<p:menubar id="toolbar_orders">
+					<p:menuitem value="Добавить" disabled="#{!canAdd}" icon="fa fa-plus-circle fa-fw fa-fvm" actionListener="#{orderController.buttonActionAddOrder}" />
+					<p:menuitem value="Удалить" icon="fa fa-times-circle fa-fw fa-fvm" onclick="PF('dlg_delete_order').show();" update=":form_order_delete" disabled="#{orderBackingBean.selectedOrder==null or !canDelete}" />
+				</p:menubar>
+
+				<div style="height: 5px;" />
+				<!-- TODO Add row highlights (colors) based on order status -->
+				<p:dataTable rowIndexVar="rowIndex"
+					style="font-size:11px !important; width: 100%;" scrollWidth="1200" id="table_orders" scrollable="true" var="order" value="#{orderController.getOrders()}" selectionMode="single" selection="#{orderBackingBean.selectedOrder}" rowKey="#{order.id}" paginator="true" paginatorAlwaysVisible="true"
+					paginatorTemplate="{CurrentPageReport} {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}" currentPageReportTemplate="Страница {currentPage} из {totalPages}" emptyMessage="Нет записей"
+					rows="20" rowsPerPageTemplate="10,20,50,100">
+
+					<p:ajax event="rowSelect" update=":form_edit_orders:toolbar_orders" />
+					<p:ajax event="rowUnselect" update=":form_edit_orders:toolbar_orders" />
+					<p:ajax event="rowDblselect" listener="#{orderController.doubleClickSelectedRowInTableOrders}" />
+
+					<p:columnGroup type="header">
+						<p:row>
+							<p:column style="width:20px;">
+								<f:facet name="header">
+									<i class="fa fa-edit" />
+								</f:facet>
+							</p:column>
+
+							<p:column headerText="#{msgs['order.number']}" styleClass="header-text-order" style="width:30px;" />
+
+							<p:column headerText="#{msgs['order.numberOld']}" styleClass="header-text-order" style="width:30px;" />
+
+							<p:column headerText="#{msgs['order.status']}" styleClass="header-text-order" style="width:100px;" />
+
+							<p:column headerText="#{msgs['order.createdDate']}" styleClass="header-text-order" style="width:60px;" />
+							<p:column headerText="#{msgs['order.loadClaimDate']}" styleClass="header-text-order" style="width:60px;" />
+							<p:column headerText="#{msgs['order.closedDate']}" styleClass="header-text-order" style="width:60px;" />
+							<p:column headerText="#{msgs['order.canceledDate']}" styleClass="header-text-order" style="width:60px;" />
+
+							<p:column headerText="#{msgs['order.good.common']}" styleClass="header-text-order" style="width:60px;" />
+							<p:column headerText="#{msgs['order.goodKind']}" styleClass="header-text-order" style="width:60px;" />
+							<p:column headerText="#{msgs['order.good']}" styleClass="header-text-order" style="width:60px;" />
+
+							<p:column headerText="#{msgs['order.transport']}" styleClass="header-text-order" style="width:60px;" />
+							<p:column headerText="#{msgs['order.transportType']}" styleClass="header-text-order" style="width:60px;" />
+							<p:column headerText="#{msgs['order.transportCompanyType']}" styleClass="header-text-order" style="width:60px;" />
+
+							<p:column headerText="#{msgs['order.ownerUser']}" styleClass="header-text-order" style="width:60px;" />
+							<p:column headerText="#{msgs['order.customer']}" styleClass="header-text-order" style="width:60px;" />
+							<p:column headerText="#{msgs['order.contractor']}" styleClass="header-text-order" style="width:60px;" />
+							<p:column headerText="#{msgs['order.contractorTrans']}" styleClass="header-text-order" style="width:60px;" />
+
+							<p:column headerText="#{msgs['order.price.all']}" styleClass="header-text-order-total" style="width:65px;" />
+							<p:column headerText="#{msgs['order.markup']}" styleClass="header-text-order-total" style="width:40px;" />
+							<p:column headerText="#{msgs['order.sum.total']}" styleClass="header-text-order-total" style="width:65px;" />
+							<p:column headerText="#{msgs['order.customer.debbalance']}" styleClass="header-text-order-total" style="width:70px;" />
+
+							<p:column headerText="#{msgs['order.paymentType']}" styleClass="header-text-order" style="width:60px;" />
+							<p:column headerText="#{msgs['order.paymentDatePlan']}" styleClass="header-text-order" style="width:60px;" />
+
+							<p:column headerText="#{msgs['order.company']}" styleClass="header-text-order" style="width:60px;" />
+							<p:column headerText="#{msgs['order.companyTrans']}" styleClass="header-text-order" style="width:60px;" />
+							<p:column headerText="#{msgs['order.provider']}" styleClass="header-text-order" style="width:60px;" />
+
+
+							<p:column headerText="#{msgs['order.stateDelete']}" styleClass="header-text-order" style="width:60px;" />
+							<p:column headerText="#{msgs['order.stateActive']}" styleClass="header-text-order" style="width:60px;" />
+							<p:column headerText="#{msgs['order.stateCanceled']}" styleClass="header-text-order" style="width:60px;" />
+
+							<p:column styleClass="header-text-order" style="width:30px;">
+								<f:facet name="header">
+									<i class="fa fa-clock-o" />
+								</f:facet>
+							</p:column>
+							<p:column headerText="#{msgs['order.vehicleStatus']}" styleClass="header-text-order" style="width:100px;" />
+							<p:column headerText="#{msgs['order.vehicle.common']}" styleClass="header-text-order" style="width:60px;" />
+							<p:column headerText="#{msgs['order.vehicle']}" styleClass="header-text-order" style="width:60px;" />
+
+							<p:column headerText="#{msgs['order.driver.common']}" styleClass="header-text-order" style="width:60px;" />
+							<p:column headerText="#{msgs['order.driver']}" styleClass="header-text-order" style="width:60px;" />
+
+							<p:column headerText="#{msgs['order.carrier']}" styleClass="header-text-order" style="width:60px;" />
+
+							<p:column headerText="#{msgs['order.vehicleOther']}" styleClass="header-text-order" style="width:60px;" />
+							<p:column headerText="#{msgs['order.driverOther']}" styleClass="header-text-order" style="width:60px;" />
+
+							<p:column headerText="#{msgs['order.transportDescription']}" styleClass="header-text-order" style="width:60px;" />
+							<p:column headerText="#{msgs['order.tranManagerUser']}" styleClass="header-text-order" style="width:60px;" />
+
+							<p:column headerText="#{msgs['order.loadPointType']}" styleClass="header-text-order" style="width:60px;" />
+							<!-- <p:column rendered="#{aed.tViewLoadPointOtherName}" headerText="#{msgs['order.loadPointOtherName']}" styleClass="header-text-order" style="width:60px;" /> -->
+
+							<p:column headerText="#{msgs['order.loadDate']}" styleClass="header-text-order" style="width:60px;" />
+							<p:column headerText="#{msgs['order.loadPlanDate']}" styleClass="header-text-order" style="width:60px;" />
+							<p:column headerText="#{msgs['order.loadFactDate']}" styleClass="header-text-order" style="width:60px;" />
+
+							<p:column headerText="#{msgs['order.loadDescription']}" styleClass="header-text-order" style="width:60px;" />
+							<p:column headerText="#{msgs['order.unloadPointName']}" styleClass="header-text-order" style="width:60px;" />
+
+							<p:column headerText="#{msgs['order.unloadDate']}" styleClass="header-text-order" style="width:60px;" />
+							<p:column headerText="#{msgs['order.unloadPlanDate']}" styleClass="header-text-order" style="width:60px;" />
+							<p:column headerText="#{msgs['order.unloadFactDate']}" styleClass="header-text-order" style="width:60px;" />
+							<p:column headerText="#{msgs['order.unloadContacts']}" styleClass="header-text-order" style="width:60px;" />
+
+							<p:column headerText="#{msgs['order.unloadDescription']}" styleClass="header-text-order" style="width:60px;" />
+
+							<p:column headerText="#{msgs['order.costTransport']}" styleClass="header-text-order" style="width:50px;" />
+							<p:column headerText="#{msgs['order.costTransportPlan']}" styleClass="header-text-order" style="width:50px;" />
+							<p:column headerText="#{msgs['order.costTransportFact']}" styleClass="header-text-order" style="width:50px;" />
+
+							<p:column headerText="#{msgs['order.costGood']}" styleClass="header-text-order" style="width:50px;" />
+							<p:column headerText="#{msgs['order.costGoodPlan']}" styleClass="header-text-order" style="width:50px;" />
+							<p:column headerText="#{msgs['order.costGoodFact']}" styleClass="header-text-order" style="width:50px;" />
+
+							<p:column headerText="#{msgs['order.priceTransport']}" styleClass="header-text-order" style="width:50px;" />
+							<p:column headerText="#{msgs['order.priceTransportPlan']}" styleClass="header-text-order" style="width:50px;" />
+							<p:column headerText="#{msgs['order.priceTransportFact']}" styleClass="header-text-order" style="width:50px;" />
+
+							<p:column headerText="#{msgs['order.priceGood']}" styleClass="header-text-order" style="width:50px;" />
+							<p:column headerText="#{msgs['order.priceGoodPlan']}" styleClass="header-text-order" style="width:50px;" />
+							<p:column headerText="#{msgs['order.priceGoodFact']}" styleClass="header-text-order" style="width:50px;" />
+
+							<p:column headerText="#{msgs['order.goodCount']}" styleClass="header-text-order" style="width:50px;" />
+							<p:column headerText="#{msgs['order.loadGoodCount']}" styleClass="header-text-order" style="width:50px;" />
+							<p:column headerText="#{msgs['order.unloadGoodCount']}" styleClass="header-text-order" style="width:50px;" />
+							<p:column headerText="#{msgs['order.goodCountPlan']}" styleClass="header-text-order" style="width:50px;" />
+							<p:column headerText="#{msgs['order.goodCountFact']}" styleClass="header-text-order" style="width:50px;" />
+
+							<p:column headerText="#{msgs['order.goodVolume']}" styleClass="header-text-order" style="width:50px;" />
+							<p:column headerText="#{msgs['order.unloadGoodVolume']}" styleClass="header-text-order" style="width:50px;" />
+							<p:column headerText="#{msgs['order.goodVolumePlan']}" styleClass="header-text-order" style="width:50px;" />
+							<p:column headerText="#{msgs['order.goodVolumeFact']}" styleClass="header-text-order" style="width:50px;" />
+						</p:row>
+					</p:columnGroup>
+
+					<p:column style="text-align: center;" headerText="Редактировать">
+						<p:commandButton icon="fa fa-edit" actionListener="#{orderController.editOrder(order)}" />
+					</p:column>
+
+					<!-- <p:column rendered="#{aed.tViewNumber}" headerText="#{msgs['order.number']}" style="width:40px;" /> -->
+					<p:column headerText="#{msgs['order.number']}">
+						<h:outputText value="#{order.id}" title="" />
+					</p:column>
+
+					<!-- <p:column rendered="#{aed.tViewStatus}" headerText="#{msgs['order.status']}" style="width:60px;" /> -->
+					<p:column headerText="#{msgs['order.status']}">
+						<h:outputText styleClass="field_status" value="#{order.orderStatusTypeName}" title="#{order.orderStatusTypeName}" />
+					</p:column>
+
+					<!-- <p:column rendered="#{aed.tViewCreatedDate}" headerText="#{msgs['order.createdDate']}" style="width:60px;" /> -->
+					<p:column style="white-space:nowrap;" headerText="#{msgs['order.createdDate']}">
+						<h:outputText value="#{order.createdDate}">
+							<f:convertDateTime pattern="dd.MM.yyyy" />
+						</h:outputText>
+					</p:column>
+
+					<!-- <p:column rendered="#{aed.tViewLoadClaimDate}" headerText="#{msgs['order.loadClaimDate']}" style="width:60px;" /> -->
+					<p:column style="white-space:nowrap;" headerText="#{msgs['order.loadClaimDate']}">
+						<h:outputText value="#{order.loadDatePlan}">
+							<f:convertDateTime pattern="dd.MM.yyyy" />
+						</h:outputText>
+					</p:column>
+
+					<!-- <p:column rendered="#{aed.tViewClosedDate}" headerText="#{msgs['order.closedDate']}" style="width:60px;" /> -->
+					<p:column style="white-space:nowrap;" headerText="#{msgs['order.closedDate']}">
+						<h:outputText value="#{order.closedDate}">
+							<f:convertDateTime pattern="dd.MM.yyyy" />
+						</h:outputText>
+					</p:column>
+
+					<!-- <p:column rendered="#{aed.tViewCanceledDate}" headerText="#{msgs['order.canceledDate']}" style="width:50px;" /> -->
+					<p:column style="white-space:nowrap;" headerText="#{msgs['order.canceledDate']}">
+						<h:outputText value="#{order.cancelledDate}">
+							<f:convertDateTime pattern="dd.MM.yyyy" />
+						</h:outputText>
+					</p:column>
+
+					<!-- <p:column rendered="#{aed.tViewGoodKind}" headerText="#{msgs['order.goodKind']}" style="width:60px;" /> -->
+					<p:column style="white-space:nowrap;" headerText="#{msgs['order.goodKind']}">
+						<h:outputText value="#{order.productTypeNameWork}" />
+					</p:column>
+
+					<!-- <p:column rendered="#{aed.tViewGood}" headerText="#{msgs['order.good']}" style="width:60px;" /> -->
+					<p:column style="white-space:nowrap;" headerText="#{msgs['order.good']}">
+						<h:outputText value="#{order.productNameShort}" />
+					</p:column>
+
+					<!-- <p:column rendered="#{aed.tViewTransport}" headerText="#{msgs['order.transport']}" styleClass="header-text-order" style="width:60px;" /> -->
+					<p:column style="white-space:nowrap;" headerText="#{msgs['order.transport']}">
+						<h:outputText value="#{orderController.getTransportInfoForTableOrders(order)}" />
+					</p:column>
+
+					<!-- <p:column rendered="#{aed.tViewTransportType}" headerText="#{msgs['order.transportType']}" style="width:60px;" /> -->
+					<p:column style="white-space:nowrap;" headerText="#{msgs['order.transportType']}">
+						<h:outputText value="#{msgs['order.transportType.null']}" rendered="#{order.transportationVehicleTypeType==null}" />
+						<h:outputText value="#{msgs['order.transportType.auto']}" rendered="#{order.transportationVehicleTypeType==enumBean.transportationVehicleTypeAuto.type}" />
+						<h:outputText value="#{msgs['order.transportType.railway']}" rendered="#{order.transportationVehicleTypeType==enumBean.transportationVehicleTypeRailway.type}" />
+					</p:column>
+
+					<!-- <p:column rendered="#{aed.tViewTransportCompanyType}" headerText="#{msgs['order.transportCompanyType']}" style="width:60px;" /> -->
+					<p:column style="white-space:nowrap;" styleClass="table-text-order-small" headerText="#{msgs['order.transportCompanyType']}">
+
+						<h:outputText styleClass="table-text-order-small" value="#{msgs['order.transportCompanyType.hired']}" rendered="#{order.transportationCompanyTypeType==enumBean.transportationCompanyTypeHired.type}" />
+						<p:outputPanel rendered="#{order.transportationCompanyTypeType==enumBean.transportationCompanyTypeHired.type}">
+							<h:outputText styleClass="table-text-order-small" value="#{msgs['order.transportCompanyType.hired.search']}" rendered="#{order.transportationHiredVehicleTypeType==enumBean.transportationHiredVehicleTypeSearch.type}" />
+							<h:outputText styleClass="table-text-order-small" value="#{msgs['order.transportCompanyType.hired.ins']}" rendered="#{order.transportationHiredVehicleTypeType==enumBean.transportationHiredVehicleTypeInternal.type}" />
+							<h:outputText styleClass="table-text-order-small" value="#{msgs['order.transportCompanyType.hired.out']}" rendered="#{order.transportationHiredVehicleTypeType==enumBean.transportationHiredVehicleTypeExternal.type}" />
+						</p:outputPanel>
+
+						<h:outputText styleClass="table-text-order-small" value="#{msgs['order.transportCompanyType.self']}" rendered="#{order.transportationCompanyTypeType==enumBean.transportationCompanyTypeSelf.type}" />
+						<h:outputText styleClass="table-text-order-small" value="#{msgs['order.transportCompanyType.transport']}" rendered="#{order.transportationCompanyTypeType==enumBean.transportationCompanyTypeTransport.type}" />
+						<h:outputText styleClass="table-text-order-small" value="#{msgs['order.transportCompanyType.null']}" rendered="#{order.transportationCompanyTypeType==null}" />
+					</p:column>
+
+
+					<!-- <p:column headerText="#{msgs['order.ownerUser']}" style="width:60px;" /> -->
+					<p:column style="white-space:nowrap;" headerText="#{msgs['order.ownerUser']}">
+						<h:outputText value="#{order.ownerTitle}" title="#{order.ownerTitle}" />
+					</p:column>
+
+					<!-- <p:column rendered="#{aed.tViewCustomer}" headerText="#{msgs['order.customer']}" style="width:60px;" /> -->
+					<p:column style="white-space:nowrap;" headerText="#{msgs['order.customer']}">
+						<h:outputText value="#{order.customerTitle}" title="#{order.customerTitle}" />
+					</p:column>
+
+					<!-- <p:column rendered="#{aed.tViewContractor}" headerText="#{msgs['order.contractor']}" style="width:60px;" /> -->
+					<p:column style="white-space:nowrap;" headerText="#{msgs['order.contractor']}">
+						<h:outputText value="#{order.contractorNameWork}" title="#{order.contractorNameWork}" />
+					</p:column>
+
+					<!-- <p:column rendered="#{aed.tViewContractorTrans}" headerText="#{msgs['order.contractorTrans']}" style="width:60px;" /> -->
+					<p:column style="white-space:nowrap;" headerText="#{msgs['order.contractorTrans']}">
+						<h:outputText value="#{order.transportationContractorNameWork}" title="#{order.transportationContractorNameWork}" />
+					</p:column>
+
+					<!--TODO add price info columns, required priceWNullConverter-->
+
+					<!-- <p:column rendered="#{aed.tViewPaymentType}" headerText="#{msgs['order.paymentType']}" style="width:60px;" /> -->
+					<p:column style="white-space:nowrap;" headerText="#{msgs['order.paymentType']}">
+						<h:outputText value="#{msgs['order.paymentType.fact']}" rendered="#{order.orderPaymentTypeType==enumBean.orderPaymentTypeFact.type}" />
+						<h:outputText value="#{msgs['order.paymentType.prepay']}" rendered="#{order.orderPaymentTypeType==enumBean.orderPaymentTypePre.type}" />
+						<h:outputText value="#{msgs['order.paymentType.post']}" rendered="#{order.orderPaymentTypeType==enumBean.orderPaymentTypePost.type}" />
+					</p:column>
+
+					<!-- <p:column rendered="#{aed.tViewPaymentDatePlan}" headerText="#{msgs['order.paymentDatePlan']}" style="width:60px;" /> -->
+					<p:column style="white-space:nowrap;" headerText="#{msgs['order.paymentDatePlan']}">
+						<h:outputText value="#{order.orderPaymentDatePlan}">
+							<f:convertDateTime pattern="dd.MM.yyyy" />
+						</h:outputText>
+					</p:column>
+
+                    <!-- <p:column rendered="#{aed.tViewCompany}" headerText="#{msgs['order.company']}" style="width:60px;" /> -->
+                    <p:column style="white-space:nowrap;" headerText="#{msgs['order.company']}">
+                        <h:outputText value="#{order.companyNameWork}" title="#{order.companyNameWork}" />
+                    </p:column>
+
+                    <!-- <p:column rendered="#{aed.tViewCompanyTrans}" headerText="#{msgs['order.companyTrans']}" style="width:60px;" /> -->
+                    <p:column style="white-space:nowrap;" headerText="#{msgs['order.companyTrans']}">
+                        <h:outputText value="#{order.transportationCompanyNameWork}" title="#{order.transportationCompanyNameWork}" />
+                    </p:column>
+
+                    <!-- <p:column rendered="#{aed.tViewProvider}" headerText="#{msgs['order.provider']}" style="width:60px;" /> -->
+                    <p:column style="white-space:nowrap;" headerText="#{msgs['order.provider']}">
+                        <h:outputText value="#{order.providerNameWork}" title="#{order.providerNameWork}" />
+                    </p:column>
+
+                    <!-- <p:column rendered="#{aed.tViewStateDelete}" headerText="#{msgs['order.stateDelete']}" style="width:60px;" /> -->
+                    <p:column style="white-space:nowrap; text-align: center; float:center;" headerText="#{msgs['order.stateDelete']}">
+                        <p:selectBooleanCheckbox value="#{order.stateDelete}" disabled="true" />
+                    </p:column>
+
+                    <!-- <p:column rendered="#{aed.tViewStateActive}" headerText="#{msgs['order.stateActive']}" style="width:60px;" /> -->
+                    <p:column style="white-space:nowrap; text-align: center; float:center;" headerText="#{msgs['order.stateNew']}">
+                        <p:selectBooleanCheckbox value="#{order.stateNew}" disabled="true" />
+                    </p:column>
+					stateActivewidth:60px;" /> -->
+                    <p:column style="white-space:nowrap; text-align: center; float:center;" headerText="#{msgs['order.stateCanceled']}">
+                        <p:selectBooleanCheckbox value="#{order.stateCancelled}" disabled="true" />
+                    </p:column>
+
+                    <!-- <p:column rendered="#{aed.tViewVehicleStatus}" headerText="#{msgs['order.vehicleStatus']}" styleClass="header-text-order" style="width:60px;" /> -->
+
+                    <p:column headerText="#{msgs['order.vehicleStatus']}">
+                        <h:outputText styleClass="field_status_date" value="#{order.vehicleStatusStatusDate}">
+                            <f:convertDateTime pattern="dd.MM HH.mm" />
+                        </h:outputText>
+                    </p:column>
+
+                    <p:column headerText="#{msgs['order.vehicleStatus']}">
+                        <h:outputText styleClass="field_status" value="#{order.vehicleStatusTitle}" title="#{order.vehicleStatusDescription}" />
+                    </p:column>
+
+                    <!-- <p:column rendered="#{aed.tViewVehicle}" headerText="#{msgs['order.vehicle']}" style="width:60px;" /> -->
+                    <p:column style="white-space:nowrap;" headerText="#{msgs['order.vehicle']}">
+                        <h:outputText value="#{order.truckGovNumber}" title="#{order.truckGovNumber} #{order.trailerGovNumber}" />
+                    </p:column>
+
+                    <!-- <p:column rendered="#{aed.tViewDriver}" headerText="#{msgs['order.driver']}" style="width:60px;" /> -->
+                    <p:column style="white-space:nowrap;" headerText="#{msgs['order.driver']}">
+                        <h:outputText value="#{order.driverTitle}" title="#{order.driverLastName} #{order.driverFirstName} #{order.driverPatronymic}" />
+                    </p:column>
+
+                    <!-- <p:column rendered="#{aed.tViewCarrier}" headerText="#{msgs['order.carrier']}" style="width:60px;" /> -->
+                    <p:column style="white-space:nowrap;" headerText="#{msgs['order.carrier']}">
+                        <h:outputText value="#{order.carrierNameWork}" title="#{order.carrierNameWork}" />
+                    </p:column>
+
+                    <!-- <p:column rendered="#{aed.tViewTranManagerUser}" headerText="#{msgs['order.tranManagerUser']}" style="width:60px;" /> -->
+                    <p:column style="white-space:nowrap;" headerText="#{msgs['order.tranManagerUser']}">
+                        <h:outputText value="#{order.transportManagerTitle}" title="#{order.transportManagerLastName} #{order.transportManagerFirstName} #{order.transportManagerPatronymic}" />
+                    </p:column>
+
+                    <!-- <p:column rendered="#{aed.tViewLoadPointType}" headerText="#{msgs['order.loadPointType']}" style="width:60px;" /> -->
+                    <p:column style="white-space:nowrap;" headerText="#{msgs['order.loadPointType']}">
+                        <h:outputText value="#{order.shipmentBaseNameShort}" rendered="#{order.loadPointType}" />
+                        <h:outputText value="#{order.loadPointOtherName}" style="font-style: italic;" rendered="#{!order.loadPointType}" />
+                    </p:column>
+
+					<!-- <p:column rendered="#{aed.tViewLoadPointOtherName}" headerText="#{msgs['order.loadPointOtherName']}" style="width:60px;" /> -->
+
+					<!-- <p:column rendered="#{aed.tViewLoadPlanDate}" headerText="#{msgs['order.loadPlanDate']}" style="width:60px;" /> -->
+					<p:column style="white-space:nowrap;" headerText="#{msgs['order.loadPlanDate']}">
+						<h:outputText value="#{order.loadDatePlan}">
+							<f:convertDateTime type="date" dateStyle="medium" />
+						</h:outputText>
+					</p:column>
+
+					<!-- <p:column rendered="#{aed.tViewLoadFactDate}" headerText="#{msgs['order.loadFactDate']}" style="width:60px;" /> -->
+					<p:column style="white-space:nowrap;" headerText="#{msgs['order.loadFactDate']}">
+						<h:outputText value="#{order.loadDateFact}">
+							<f:convertDateTime type="date" dateStyle="medium" />
+						</h:outputText>
+					</p:column>
+
+
+
+					<!-- <p:column rendered="#{aed.tViewLoadDescription}" headerText="#{msgs['order.loadDescription']}" style="width:60px;" /> -->
+					<p:column style="white-space:nowrap;" headerText="#{msgs['order.loadDescription']}">
+						<h:outputText value="#{order.loadDescription}" title="#{order.loadDescription}" />
+					</p:column>
+
+					<!-- <p:column rendered="#{aed.tViewUnloadPointName}" headerText="#{msgs['order.loadDescription']}" style="width:60px;" /> -->
+					<p:column style="white-space:nowrap;" headerText="#{msgs['order.unloadPointName']}">
+						<h:outputText value="#{order.unloadPointOtherName}" title="#{order.unloadPointOtherName}" />
+					</p:column>
+
+					<!-- <p:column rendered="#{aed.tViewUnloadPlanDate}" headerText="#{msgs['order.unloadPlanDate']}" style="width:60px;" /> -->
+					<p:column style="white-space:nowrap;" headerText="#{msgs['order.unloadPlanDate']}">
+						<h:outputText value="#{order.unloadDatePlan}">
+							<f:convertDateTime type="date" dateStyle="medium" />
+						</h:outputText>
+					</p:column>
+
+					<!-- <p:column rendered="#{aed.tViewUnloadFactDate}" headerText="#{msgs['order.unloadFactDate']}" style="width:60px;" /> -->
+					<p:column style="white-space:nowrap;" headerText="#{msgs['order.unloadFactDate']}">
+						<h:outputText value="#{order.unloadDateFact}">
+							<f:convertDateTime type="date" dateStyle="medium" />
+						</h:outputText>
+					</p:column>
+
+					<!-- <p:column rendered="#{aed.tViewUnloadContacts}" headerText="#{msgs['order.unloadContacts']}" style="width:60px;" /> -->
+					<p:column style="white-space:nowrap;" headerText="#{msgs['order.unloadContacts']}">
+						<h:outputText value="#{order.unloadContacts}" title="#{order.unloadContacts}" />
+					</p:column>
+
+
+					<!-- <p:column rendered="#{aed.tViewUnloadDescription}" headerText="#{msgs['order.unloadDescription']}" style="width:60px;" /> -->
+					<p:column style="white-space:nowrap;" headerText="#{msgs['order.unloadDescription']}">
+						<h:outputText value="#{order.unloadDescription}" title="#{order.unloadDescription}" />
+					</p:column>
+
+					<!-- <p:column rendered="#{aed.tViewCostTransportPlan}" headerText="#{msgs['order.costTransportPlan']}" style="width:60px;" /> -->
+					<p:column style="white-space:nowrap; text-align: right;" headerText="#{msgs['order.costTransportPlan']}">
+						<h:outputText value="#{order.transportCostPlan}">
+							<f:convertNumber minFractionDigits="0" groupingUsed="true" />
+						</h:outputText>
+					</p:column>
+
+					<!-- <p:column rendered="#{aed.tViewCostTransportFact}" headerText="#{msgs['order.costTransportFact']}" style="width:60px;" /> -->
+					<p:column style="white-space:nowrap; text-align: right;" headerText="#{msgs['order.costTransportFact']}">
+						<h:outputText value="#{order.transportCostFact}">
+							<f:convertNumber minFractionDigits="0" groupingUsed="true" />
+						</h:outputText>
+					</p:column>
+
+					<!-- <p:column rendered="#{aed.tViewCostGoodPlan}" headerText="#{msgs['order.costGoodPlan']}" style="width:60px;" /> -->
+					<p:column style="white-space:nowrap; text-align: right;" headerText="#{msgs['order.costGoodPlan']}">
+						<h:outputText value="#{order.productCostPlan}">
+							<f:convertNumber minFractionDigits="0" groupingUsed="true" />
+						</h:outputText>
+					</p:column>
+
+					<!-- <p:column rendered="#{aed.tViewCostGoodFact}" headerText="#{msgs['order.costGoodFact']}" style="width:60px;" /> -->
+					<p:column style="white-space:nowrap; text-align: right;" headerText="#{msgs['order.costGoodFact']}">
+						<h:outputText value="#{order.productCostFact}">
+							<f:convertNumber minFractionDigits="0" groupingUsed="true" />
+						</h:outputText>
+					</p:column>
+
+					<!-- <p:column rendered="#{aed.tViewPriceTransportPlan}" headerText="#{msgs['order.priceTransportPlan']}" style="width:60px;" /> -->
+					<p:column style="white-space:nowrap; text-align: right;" headerText="#{msgs['order.priceTransportPlan']}">
+						<h:outputText value="#{order.transportPricePlan}">
+							<f:convertNumber minFractionDigits="0" groupingUsed="true" />
+						</h:outputText>
+					</p:column>
+
+					<!-- <p:column rendered="#{aed.tViewPriceTransportFact}" headerText="#{msgs['order.priceTransportFact']}" style="width:60px;" /> -->
+					<p:column style="white-space:nowrap; text-align: right;" headerText="#{msgs['order.priceTransportFact']}">
+						<h:outputText value="#{order.transportPriceFact}">
+							<f:convertNumber minFractionDigits="0" groupingUsed="true" />
+						</h:outputText>
+					</p:column>
+
+					<!-- <p:column rendered="#{aed.tViewPriceGoodPlan}" headerText="#{msgs['order.priceGoodPlan']}" style="width:60px;" /> -->
+					<p:column style="white-space:nowrap; text-align: right;" headerText="#{msgs['order.priceGoodPlan']}">
+						<h:outputText value="#{order.productPricePlan}">
+							<f:convertNumber minFractionDigits="0" groupingUsed="true" />
+						</h:outputText>
+					</p:column>
+
+					<!-- <p:column rendered="#{aed.tViewPriceGoodFact}" headerText="#{msgs['order.priceGoodFact']}" style="width:60px;" /> -->
+					<p:column style="white-space:nowrap; text-align: right;" headerText="#{msgs['order.priceGoodFact']}">
+						<h:outputText value="#{order.productPriceFact}">
+							<f:convertNumber minFractionDigits="0" groupingUsed="true" />
+						</h:outputText>
+					</p:column>
+
+					<!-- <p:column rendered="#{aed.tViewLoadGoodCount}" headerText="#{msgs['order.loadGoodCount']}" style="width:60px;" /> -->
+					<p:column style="white-space:nowrap; text-align: right;" headerText="#{msgs['order.loadGoodCount']}">
+						<h:outputText value="#{order.loadProductCount}">
+							<f:convertNumber minFractionDigits="0" groupingUsed="true" />
+						</h:outputText>
+					</p:column>
+
+					<!-- <p:column rendered="#{aed.tViewUnloadGoodCount}" headerText="#{msgs['order.unloadGoodCount']}" style="width:60px;" /> -->
+					<p:column style="white-space:nowrap; text-align: right;" headerText="#{msgs['order.unloadGoodCount']}">
+						<h:outputText value="#{order.unloadProductCount}">
+							<f:convertNumber minFractionDigits="0" groupingUsed="true" />
+						</h:outputText>
+					</p:column>
+
+					<!-- <p:column rendered="#{aed.tViewGoodCountPlan}" headerText="#{msgs['order.goodCountPlan']}" style="width:60px;" /> -->
+					<p:column style="white-space:nowrap; text-align: right;" headerText="#{msgs['order.goodCountPlan']}">
+						<h:outputText value="#{order.productCountPlan}">
+							<f:convertNumber minFractionDigits="0" groupingUsed="true" />
+						</h:outputText>
+					</p:column>
+
+					<!-- <p:column rendered="#{aed.tViewGoodCountFact}" headerText="#{msgs['order.goodCountFact']}" style="width:60px;" /> -->
+					<p:column style="white-space:nowrap; text-align: right;" headerText="#{msgs['order.goodCountFact']}">
+						<h:outputText value="#{order.productCountFact}">
+							<f:convertNumber minFractionDigits="0" groupingUsed="true" />
+						</h:outputText>
+					</p:column>
+
+					<!-- <p:column rendered="#{aed.tViewUnloadGoodVolume}" headerText="#{msgs['order.unloadGoodVolume']}" style="width:60px;" /> -->
+					<p:column style="white-space:nowrap; text-align: right;" headerText="#{msgs['order.unloadGoodVolume']}">
+						<h:outputText value="#{order.unloadProductVolume}">
+							<f:convertNumber minFractionDigits="0" groupingUsed="true" />
+						</h:outputText>
+					</p:column>
+
+					<!-- <p:column rendered="#{aed.tViewGoodVolumePlan}" headerText="#{msgs['order.goodVolumePlan']}" style="width:60px;" /> -->
+					<p:column style="white-space:nowrap; text-align: right;" headerText="#{msgs['order.goodVolumePlan']}">
+						<h:outputText value="#{order.productVolumePlan}">
+							<f:convertNumber minFractionDigits="0" groupingUsed="true" />
+						</h:outputText>
+					</p:column>
+
+					<!-- <p:column rendered="#{aed.tViewGoodVolumeFact}" headerText="#{msgs['order.goodVolumeFact']}" style="width:60px;" /> -->
+					<p:column style="white-space:nowrap; text-align: right;" headerText="#{msgs['order.goodVolumeFact']}">
+						<h:outputText value="#{order.productVolumeFact}">
+							<f:convertNumber minFractionDigits="0" groupingUsed="true" />
+						</h:outputText>
+					</p:column>
+				</p:dataTable>
+
+				<div style="height: 5px;" />
+			</h:form>
+		</ui:define>
+	</ui:composition>
+</h:body>
+</html>

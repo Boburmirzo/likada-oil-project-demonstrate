@@ -1,0 +1,834 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" 
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:h="http://java.sun.com/jsf/html" xmlns:f="http://java.sun.com/jsf/core" xmlns:ui="http://java.sun.com/jsf/facelets" xmlns:p="http://primefaces.org/ui">
+<h:body>
+	<ui:composition template="/layout/forcab.xhtml">
+		<ui:define name="windowTitle">#{msgs['product.title']}</ui:define>
+		<ui:define name="content">
+
+			<ui:param name="canEditProducts" value="#{!loginController.hasAccessTo(enumBean.modelProduct, enumBean.accessEdit)}" />
+
+			<p:dialog responsive="true" style="width:50%; max-width: 95%; max-height: 95%; overflow: auto;" id="dialog_delete_group" header="Удаление группы" widgetVar="dlg_delete_group" resizable="false" modal="true" draggable="false" rendered="#{!canEditProducts}">
+				<h:form id="form_group_delete">
+					<h:panelGrid columns="1" cellpadding="5" style="width: 100%;">
+						<h:outputLabel value="Вы действительно хотите удалить данную группу и все вложенные группы и товары ?" />
+						<h:outputLabel style="font-weight: bold;" id="label_deleteGroup" value="Группа: #{productBackingBean.selectedProductNode.data.title}" />
+						<h:panelGrid columns="2" cellpadding="5" style="margin: 0 auto;">
+							<p:commandButton icon="fa fa-times-circle fa-fw fa-fvm" value="Удалить" update=":form_edit_goods:goods_groups form_edit_goods:goods_groups_list" actionListener="#{productController.buttonActionRemoveGroup}" oncomplete="PF('dlg_delete_group').hide();" />
+							<p:commandButton value="Отмена" onclick="PF('dlg_delete_group').hide();" />
+						</h:panelGrid>
+					</h:panelGrid>
+				</h:form>
+			</p:dialog>
+
+			<p:dialog responsive="true" style="width:50%; max-width: 95%; max-height: 95%; overflow: auto;" id="dialog_delete_good" header="Удаление товара / услуги" widgetVar="dlg_delete_good" resizable="false" modal="true" draggable="false" rendered="#{!canEditProducts}">
+				<h:form id="form_good_delete">
+					<h:panelGrid columns="1" cellpadding="5" style="width: 100%;">
+						<h:outputLabel value="Вы действительно хотите удалить указанный товар / услугу ?" />
+						<h:outputLabel style="font-weight: bold;" id="label_deleteGood" value="Товар / услуга: #{productBackingBean.selectedProduct.nameShort},  идент: #{productBackingBean.selectedProduct.id}" />
+						<h:panelGrid columns="2" cellpadding="5" style="margin: 0 auto;">
+							<p:commandButton icon="fa fa-times-circle fa-fw fa-fvm" value="Удалить" update=":form_edit_goods:table_goods" actionListener="#{productController.buttonActionRemoveProduct}" oncomplete="PF('dlg_delete_good').hide();" />
+							<p:commandButton value="Отмена" onclick="PF('dlg_delete_good').hide();" />
+						</h:panelGrid>
+					</h:panelGrid>
+				</h:form>
+			</p:dialog>
+
+			<p:dialog responsive="true" style="width:95%; min-width:95%; max-width: 95%; max-height: 95%; overflow: auto;" id="dialog_chartgood" widgetVar="dlg_chartgood" resizable="false" modal="true" draggable="false" rendered="#{!canEditProducts}">
+				<h:form id="form_chartgood">
+					<h:panelGrid columns="1" cellpadding="5" style="width:100%;">
+						<h:outputLabel value="График цен: #{productBackingBean.productChart.code}" />
+						<p:chart type="line" model="#{productController.getProductChartCategoryModel()}" style="height:300px;" responsive="true" rendered="true" />
+						<h:panelGrid columns="1" cellpadding="5" style="margin: 0 auto;">
+							<p:commandButton value="Закрыть" onclick="PF('dlg_chartgood').hide();" />
+						</h:panelGrid>
+					</h:panelGrid>
+				</h:form>
+			</p:dialog>
+
+			<p:dialog responsive="true" style="width:50%; max-width: 95%; max-height: 95%; overflow: auto;" id="dialog_delete_price" header="Удаление цены товара / услуги" widgetVar="dlg_delete_price" resizable="false" modal="true" draggable="false" rendered="#{!canEditProducts}">
+				<h:form id="form_price_delete">
+					<h:panelGrid columns="1" cellpadding="5" style="width: 100%;">
+						<h:outputLabel value="Вы действительно хотите удалить указанную цену на товар / услугу ?" />
+						<h:outputLabel style="font-weight: bold;" id="label_deletePrice" value="Цена: #{productBackingBean.selectedProductPrice.price}, идент: #{productBackingBean.selectedProductPrice.id}" />
+						<h:panelGrid columns="2" cellpadding="5" style="margin: 0 auto;">
+							<p:commandButton icon="fa fa-times-circle fa-fw fa-fvm" value="Удалить" update=":form_good_edit" actionListener="#{productController.buttonActionRemovePrice}" oncomplete="PF('dlg_delete_price').hide();" />
+							<p:commandButton value="Отмена" onclick="PF('dlg_delete_price').hide();" />
+						</h:panelGrid>
+					</h:panelGrid>
+				</h:form>
+			</p:dialog>
+
+			<p:dialog responsive="true" style="width:50%; max-width: 95%; max-height: 95%; overflow: auto;" id="dialog_edit_group" header="Редактирование имени группы" widgetVar="dlg_edit_group" resizable="false" modal="true" draggable="false" rendered="#{!canEditProducts}">
+				<h:form id="form_group_edit">
+					<h:panelGrid columns="1" cellpadding="5" style="width: 100%;">
+						<h:panelGrid columns="2" cellpadding="5" style="margin: 0 auto;">
+							<p:outputLabel value="Заголовок:" />
+							<p:inputText id="editGroup_title" value="#{productBackingBean.selectedProductNode.data.title}" />
+						</h:panelGrid>
+						<h:panelGrid columns="2" cellpadding="5" style="margin: 0 auto;">
+							<p:commandButton icon="fa fa-check fa-fw fa-fvm" value="Ок" update=":form_edit_goods:goods_groups form_edit_goods:goods_groups_list" actionListener="#{productController.buttonActionSaveEditGroup}" oncomplete="PF('dlg_edit_group').hide();" />
+							<p:commandButton value="Отмена" process="@this" update="dialog_edit_group" onsuccess="PF('dlg_edit_group').hide();">
+								<p:resetInput target="dialog_edit_group" />
+							</p:commandButton>
+						</h:panelGrid>
+					</h:panelGrid>
+				</h:form>
+			</p:dialog>
+
+			<p:dialog responsive="true" style="width:50%; max-width: 95%; max-height: 95%; overflow: auto;" id="dialog_newprices" header="Обновление цен" widgetVar="dlg_newprices" resizable="false" modal="true" draggable="false" fitViewport="true">
+				<h:form id="form_newprices">
+					<div class="ui-fluid" style="max-width: 1000px;">
+						<p:dataTable id="table_newprices" var="price" value="#{productBackingBean.newProductPrices}" selectionMode="single" selection="#{productBackingBean.selectedProductNewPrice}" rowKey="#{productBackingBean.newProductPrices.indexOf(price)}">
+							<p:column headerText="#{msgs['product.base']}" style="white-space:nowrap;" priority="2">
+								<h:outputText value="#{price.product.shipmentBaseId.nameShort}" />
+							</p:column>
+							<p:column headerText="#{msgs['product.nameShort']}" style="white-space:nowrap;" priority="1" rendered="false">
+								<h:outputText value="#{price.product.nameShort}" />
+							</p:column>
+							<p:column headerText="#{msgs['product.code']}" style="white-space:nowrap;" priority="1">
+								<h:outputText value="#{price.product.code}" />
+							</p:column>
+							<p:column headerText="#{msgs['product.price']}" priority="1">
+								<h:outputText style="text-align: right; float:right" value="#{productPriceService.getProductActualPrice(price.product.productPricesList).price}">
+									<f:convertNumber groupingUsed="true" maxFractionDigits="2" />
+								</h:outputText>
+							</p:column>
+
+							<p:column style="width:20px; text-align: center;" priority="1">
+								<f:facet name="header">
+									<p:commandButton style="width:100%; text-align: center;" icon="fa fa-chevron-circle-right" actionListener="#{productController.setAllOldProductPrices()}" update="table_newprices" />
+								</f:facet>
+								<p:commandButton icon="fa fa-chevron-circle-right" actionListener="#{productController.setOldPrice(price)}" update="field_newprice field_difference" tabindex="#{productController.fieldButtonPriceTabIndex}" />
+							</p:column>
+
+							<p:column headerText="#{msgs['product.newprice']}" priority="1">
+								<p:inputText tabindex="#{productController.fieldNewPriceTabIndex}" id="field_newprice" style="text-align: right; float:right; width:98%" value="#{price.price}">
+									<f:convertNumber groupingUsed="true" maxFractionDigits="2" />
+									<p:ajax update="field_difference field_newprice" />
+								</p:inputText>
+							</p:column>
+
+							<p:column headerText="#{msgs['product.difference']}" priority="1">
+								<p:outputPanel id="field_difference">
+									<h:outputText style="text-align: right; float:right" value="#{price.price - productPriceService.getProductActualPrice(price.product.productPricesList).price}">
+										<f:convertNumber groupingUsed="true" />
+									</h:outputText>
+
+									<ui:param name="pd" value="#{productPriceService.getPriceDirection(price.product, price)}" />
+
+									<p:outputPanel style="text-align: center; color: green; width: 20px; float:right;" rendered="#{pd==0}">
+										<i class="fa fa-circle-o" />
+									</p:outputPanel>
+									<p:outputPanel style="text-align: center; color: green; width: 20px; float:right;" rendered="#{pd==1}">
+										<i class="fa fa-arrow-up" />
+									</p:outputPanel>
+									<p:outputPanel style="text-align: center; color: red; width: 20px; float:right;" rendered="#{pd==-1}">
+										<i class="fa fa-arrow-down" />
+									</p:outputPanel>
+								</p:outputPanel>
+							</p:column>
+
+							<p:column headerText="#{msgs['product.meashureUnit']}" style="width:20px;white-space:nowrap;" priority="2">
+								<h:outputText value="#{price.product.measureUnit.nameShort}" />
+							</p:column>
+
+							<p:column style="width:20px; text-align: center;" priority="1">
+								<p:commandButton style="background: -webkit-linear-gradient(top, red 0%,red 100%) !important;" icon="fa fa-remove" actionListener="#{productController.deleteNewProductPrice(price)}" update="form_newprices" />
+							</p:column>
+						</p:dataTable>
+
+						<p:panelGrid columns="3" cellpadding="5" style="margin: 0 auto;" styleClass="ui-noborder">
+							<p:outputPanel>
+								<table border="0" cellpadding="3" cellspacing="0">
+									<tr>
+										<td valign="middle"><p:outputLabel value="Оповестить подписчиков:" /></td>
+										<td valign="middle"><p:selectBooleanCheckbox value="#{productBackingBean.newPriceNotify}" /></td>
+										<td valign="middle"><p:outputLabel value="Дата и время:" /></td>
+										<td valign="middle"><p:calendar value="#{productBackingBean.newPriceData}" pattern="dd.MM.yyyy hh:mm:ss" locale="ru" /></td>
+									</tr>
+								</table>
+							</p:outputPanel>
+
+							<p:commandButton value="Сохранить" update=":form_edit_goods:table_goods" actionListener="#{productController.buttonActionSaveNewProductPrices}" oncomplete="PF('dlg_newprices').hide();" rendered="#{!canEditProducts}"/>
+							<p:commandButton value="Отмена" update=":form_edit_goods:table_goods" process="@this" actionListener="#{productController.buttonActionCancelSaveNewPrices}" oncomplete="PF('dlg_newprices').hide();" rendered="#{!canEditProducts}">
+								<p:resetInput target="dialog_newprices" />
+							</p:commandButton>
+						</p:panelGrid>
+					</div>
+				</h:form>
+			</p:dialog>
+
+			<p:dialog responsive="true" style="width:50%; max-width: 95%; max-height: 95%; overflow: auto;" id="dialog_newbalances" header="Обновление остатков" widgetVar="dlg_newbalances" resizable="false" modal="true" draggable="false" rendered="#{cpom.user.allowGoodsBalanceEdit}" fitViewport="true">
+				<h:form id="form_newbalances">
+					<div class="ui-fluid" style="max-width: 1000px;">
+						<p:dataTable id="table_newbalances" var="balan" value="#{goods.newBalances}" selectionMode="single" selection="#{goods.selectedNewBalance}" rowKey="#{goods.newBalances.indexOf(balan)}">
+							<p:column headerText="#{msgs['product.base']}" style="white-space:nowrap;" priority="2">
+								<h:outputText value="#{productController.getShipmentBasisById(balan.good.baseId).nameShort}" />
+							</p:column>
+							<p:column headerText="#{msgs['product.nameShort']}" style="white-space:nowrap;" priority="1">
+								<h:outputText value="#{balan.good.nameShort}" />
+							</p:column>
+							<p:column headerText="#{msgs['product.price']}" priority="1">
+								<h:outputText style="text-align: right; float:right" value="#{balan.good.actualPrice.price}">
+									<f:convertNumber groupingUsed="true" maxFractionDigits="2" />
+								</h:outputText>
+							</p:column>
+
+							<p:column headerText="#{msgs['product.price']}" style="width:130px;" priority="1">
+								<ui:param name="pd" value="#{productPriceService.getPriceDirection(balan.good, balan.good.actualPrice)}" />
+								<p:panelGrid styleClass="goodsTable" columns="3" cellpadding="0" cellspacing="0">
+
+									<h:outputText style="text-align: left; float:left; font-size: xx-small;" value="#{balan.good.actualPrice.timeModified}">
+										<f:convertDateTime pattern="dd.MM.yy HH:mm" />
+									</h:outputText>
+									<h:outputText style="float:right;" value="#{balan.good.actualPrice.price}">
+										<f:convertNumber groupingUsed="true" maxFractionDigits="2" />
+									</h:outputText>
+									<p:outputPanel>
+										<p:outputPanel style="color: green; font-weight: bold;" rendered="#{pd==0}">
+											<i class="fa fa-circle-o" />
+										</p:outputPanel>
+										<p:outputPanel style="color: green; font-weight: bold;" rendered="#{pd==1}">
+											<i class="fa fa-arrow-up" />
+											<p:spacer width="3" />
+											<h:outputLabel value="#{productPriceService.getPriceDifference(balan.good, balan.good.actualPrice)}">
+												<f:convertNumber groupingUsed="true" maxFractionDigits="2" />
+											</h:outputLabel>
+										</p:outputPanel>
+										<p:outputPanel style="color: red; font-weight: bold;" rendered="#{pd==-1}">
+											<i class="fa fa-arrow-down" />
+											<p:spacer width="3" />
+											<h:outputLabel value="#{productPriceService.getPriceDifference(balan.good, balan.good.actualPrice)}">
+												<f:convertNumber groupingUsed="true" maxFractionDigits="2" />
+											</h:outputLabel>
+										</p:outputPanel>
+									</p:outputPanel>
+								</p:panelGrid>
+							</p:column>
+
+							<p:column headerText="#{msgs['product.meashureUnit']}" style="width:20px;white-space:nowrap;" priority="2">
+								<h:outputText value="#{measureUnitService(balan.good.meashureUnitId)}" />
+							</p:column>
+
+							<p:column headerText="#{msgs['product.balance']}" style="white-space:nowrap;" priority="1">
+								<h:outputText value="#{balan.good.balance}" />
+							</p:column>
+
+							<p:column style="width:20px; text-align: center;" priority="1">
+								<f:facet name="header">
+									<p:commandButton style="width:100%; text-align: center;" icon="fa fa-chevron-circle-right" actionListener="#{goods.setAllOldBalances()}" update="table_newbalances" />
+								</f:facet>
+								<p:commandButton icon="fa fa-chevron-circle-right" actionListener="#{goods.setOldBalance(balan)}" update="field_newbalance" tabindex="#{goods.fieldButtonPriceTabIndex}" />
+							</p:column>
+
+							<p:column headerText="#{msgs['product.newbalance']}" priority="1">
+								<p:inputText tabindex="#{goods.fieldNewBalanceTabIndex}" id="field_newbalance" style="text-align: right; float:right; width:98%" value="#{balan.balance}">
+									<p:ajax update="field_newbalance" />
+								</p:inputText>
+							</p:column>
+
+							<p:column style="width:20px; text-align: center;" priority="1">
+								<p:commandButton style="background: -webkit-linear-gradient(top, red 0%,red 100%) !important;" icon="fa fa-remove" actionListener="#{goods.deleteNewBalance(balan)}" update="table_newbalances" />
+							</p:column>
+
+						</p:dataTable>
+
+						<p:panelGrid columns="2" cellpadding="5" style="margin: 0 auto;" styleClass="ui-noborder">
+							<p:commandButton value="Сохранить" update=":form_edit_goods:table_goods" actionListener="#{goods.buttonActionSaveNewBalances}" oncomplete="PF('dlg_newbalances').hide();"/>
+							<p:commandButton value="Отмена" update=":form_edit_goods:table_goods" process="@this" actionListener="#{goods.buttonActionCancelSaveNewBalances}" oncomplete="PF('dlg_newbalances').hide();">
+								<p:resetInput target="dialog_newbalances" />
+							</p:commandButton>
+							<p:commandButton value="Назад" actionListener="#{goods.buttonActionBackNewBalances}" oncomplete="PF('dlg_newbalances').hide();" rendered="#{goods.readOnly}" />
+						</p:panelGrid>
+					</div>
+				</h:form>
+			</p:dialog>
+
+			<p:dialog responsive="true" style="width:50%; max-width: 95%; max-height: 95%; overflow: auto;" id="dialog_edit_good" header="Редактирование товара" widgetVar="dlg_edit_good" resizable="false" modal="true" draggable="false">
+				<h:form id="form_good_edit">
+					<div class="ui-fluid" style="max-width: 800px;">
+						<div class="ui-grid ui-grid-responsive">
+							<div class="ui-grid-row resp_grid_mar_tb_5">
+								<div class="ui-grid-col-1 resp_ui-grid-col-1">
+									<p:outputLabel value="#{msgs['product.goodGroup']}"/>
+								</div>
+
+								<div class="ui-grid-col-5">
+									<p:outputPanel value="#{productBackingBean.editProduct.groupId.title}" rendered="#{canEditProducts}"/>
+									<p:outputPanel rendered="#{!canEditProducts}">
+										<p:selectOneMenu value="#{productBackingBean.editProduct.groupId.id}" required="true">
+											<f:selectItems value="#{productBackingBean.productGroupsNodeList}" var="gtn" itemValue="#{gtn.data.id}" itemLabel="#{gtn.data.title}" />
+										</p:selectOneMenu>
+									</p:outputPanel>
+								</div>
+							</div>
+
+							<div class="ui-grid-row resp_grid_mar_tb_5">
+								<div class="ui-grid-col-1 resp_ui-grid-col-1">
+									<p:outputLabel value="#{msgs['product.type']}" />
+								</div>
+
+								<div class="ui-grid-col-5">
+									<p:outputPanel rendered="#{canEditProducts}">
+										<p:outputLabel value="Товар" rendered="#{productBackingBean.editProduct.type==1}" />
+										<p:outputLabel value="Услуга" rendered="#{productBackingBean.editProduct.type==2}" />
+									</p:outputPanel>
+
+									<p:selectOneMenu value="#{productBackingBean.editProduct.type}" rendered="#{!canEditProducts}">
+										<f:selectItem itemLabel="Товар" itemValue="1" />
+										<f:selectItem itemLabel="Услуга" itemValue="2" />
+									</p:selectOneMenu>
+								</div>
+							</div>
+
+							<div class="ui-grid-row resp_grid_mar_tb_5">
+								<div class="ui-grid-col-1 resp_ui-grid-col-1">
+									<p:outputLabel value="#{msgs['product.active']}" />
+								</div>
+								<div class="ui-grid-col-5">
+									<p:selectBooleanCheckbox value="#{productBackingBean.editProduct.active}" disabled="#{canEditProducts}" />
+								</div>
+							</div>
+
+							<div class="ui-grid-row resp_grid_mar_tb_5">
+								<div class="ui-grid-col-1 resp_ui-grid-col-1">
+									<p:outputLabel value="#{msgs['product.kind']}" />
+								</div>
+								<div class="ui-grid-col-5">
+									<p:outputLabel styleClass="field_readonly" value="#{productBackingBean.editProduct.productType.nameWork}" rendered="#{canEditProducts}"/>
+									<p:outputPanel rendered="#{!canEditProducts}">
+										<table width="100%" border="0" cellpadding="0" cellspacing="0">
+											<tr>
+												<td><p:inputText styleClass="field_readonly" id="driveCood" readonly="true" value="#{productBackingBean.editProduct.productType.nameWork!=null ? productBackingBean.editProduct.productType.nameWork : ''}"/></td>
+												<td style="width: 30px;" align="right"><p:commandButton style="width:30px;" update="form_product_type_choice" icon="fa fa-list-ul" onsuccess="PF('dlg_product_type_choice').show();" rendered="#{!canEditProducts}"/></td>
+											</tr>
+										</table>
+									</p:outputPanel>
+								</div>
+							</div>
+
+							<div class="ui-grid-row resp_grid_mar_tb_5">
+								<div class="ui-grid-col-1 resp_ui-grid-col-1">
+									<p:outputLabel value="База" />
+								</div>
+								<div class="ui-grid-col-5">
+									<p:outputPanel rendered="#{!canEditProducts}">
+										<table width="100%" border="0" cellpadding="0" cellspacing="0">
+											<tr>
+												<td><p:inputText styleClass="field_readonly" id="shipment_base_choose_id" readonly="true" value="#{productBackingBean.editProduct.shipmentBaseId.nameShort!=null ? productBackingBean.editProduct.shipmentBaseId.nameShort : ''}"/></td>
+												<td style="width: 30px;" align="right"><p:commandButton style="width:30px;" update="form_shipment_base_choice" icon="fa fa-list-ul" onsuccess="PF('dlg_shipment_base_choice').show();" rendered="#{!canEditProducts}"/></td>
+											</tr>
+										</table>
+									</p:outputPanel>
+								</div>
+							</div>
+
+							<div class="ui-grid-row resp_grid_mar_tb_5">
+								<div class="ui-grid-col-1 resp_ui-grid-col-1">
+									<p:outputLabel value="#{msgs['product.code']}" />
+								</div>
+								<div class="ui-grid-col-5">
+									<p:outputLabel value="#{productBackingBean.editProduct.code}" rendered="#{canEditProducts}"/>
+									<p:inputText value="#{productBackingBean.editProduct.code}" rendered="#{!canEditProducts}"/>
+								</div>
+							</div>
+
+							<div class="ui-grid-row resp_grid_mar_tb_5">
+								<div class="ui-grid-col-1 resp_ui-grid-col-1">
+									<p:outputLabel value="#{msgs['product.nameShort']}" />
+								</div>
+								<div class="ui-grid-col-5">
+									<p:outputLabel value="#{productBackingBean.editProduct.nameShort}" rendered="#{canEditProducts}" />
+									<p:inputText id="nameShort" value="#{productBackingBean.editProduct.nameShort}" rendered="#{!canEditProducts}"/>
+								</div>
+							</div>
+
+							<div class="ui-grid-row resp_grid_mar_tb_5">
+								<div class="ui-grid-col-1 resp_ui-grid-col-1">
+									<p:outputLabel value="#{msgs['product.nameFull']}" />
+								</div>
+								<div class="ui-grid-col-10">
+									<p:outputLabel value="#{productBackingBean.editProduct.nameShort}" rendered="#{canEditProducts}"/>
+									<p:inputText value="#{productBackingBean.editProduct.nameFull}" rendered="#{!canEditProducts}"/>
+								</div>
+							</div>
+
+							<div class="ui-grid-row resp_grid_mar_tb_5">
+								<div class="ui-grid-col-1 resp_ui-grid-col-1">
+									<p:outputLabel value="#{msgs['product.meashureUnit']}" />
+								</div>
+								<div class="ui-grid-col-5">
+									<p:outputLabel value="#{productBackingBean.editProduct.measureUnit.nameFull}" rendered="#{canEditProducts}" />
+									<p:selectOneMenu value="#{productBackingBean.editProduct.measureUnit}" converter="measureUnitConverter" rendered="#{!canEditProducts}">
+										<f:selectItems itemDisabled="false" value="#{productModelBean.measureUnits}" var="mu" itemLabel="#{mu.nameFull}" itemValue="#{mu}" />
+									</p:selectOneMenu>
+								</div>
+							</div>
+
+							<div class="ui-grid-row resp_grid_mar_tb_5">
+								<div class="ui-grid-col-1 resp_ui-grid-col-1">
+									<p:outputLabel value="#{msgs['product.price']}" />
+								</div>
+								<div class="ui-grid-col-10">
+									<p:menubar id="toolbar_prices" rendered="#{!canEditProducts}">
+										<p:menuitem value="Добавить" icon="fa fa-plus-circle fa-fw fa-fvm" actionListener="#{productController.buttonActionNewPrice}" update="good_prices" />
+										<p:menuitem value="Удалить" icon="fa fa-times-circle fa-fw fa-fvm" onclick="PF('dlg_delete_price').show();" update=":form_price_delete" disabled="#{productBackingBean.selectedProductPrice==null}" />
+									</p:menubar>
+									<div style="height: 5px;" />
+									<p:dataTable id="good_prices" value="#{productBackingBean.editProduct.productPricesList}" var="price" editable="#{!canEditProducts}" editMode="cell" widgetVar="cellPrices" selectionMode="single" selection="#{productBackingBean.selectedProductPrice}" rowKey="#{productBackingBean.editProduct.productPricesList.indexOf(price)}" paginator="true" paginatorTemplate="{CurrentPageReport} {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink}" currentPageReportTemplate="Страница {currentPage} из {totalPages}" paginatorAlwaysVisible="false"
+										emptyMessage="Нет записей" rows="7">
+										<p:ajax event="rowSelect" update=":form_price_delete :form_good_edit:toolbar_prices" />
+										<p:ajax event="rowUnselect" update=":form_price_delete :form_good_edit:toolbar_prices" />
+										<p:ajax event="cellEdit" update=":form_good_edit:good_prices" />
+										<p:column style="width:16px;text-align:center" />
+										<p:column headerText="Актуальность">
+											<p:cellEditor>
+												<f:facet name="output">
+													<h:outputText value="#{price.timeModified}">
+														<f:convertDateTime pattern="dd.MM.yyyy HH:mm:ss" />
+													</h:outputText>
+												</f:facet>
+												<f:facet name="input">
+													<p:calendar value="#{price.timeModified}" pattern="dd.MM.yyyy HH:mm:ss" locale="ru" />
+												</f:facet>
+											</p:cellEditor>
+										</p:column>
+										<p:column headerText="Цена">
+											<p:cellEditor>
+												<f:facet name="output">
+													<p:panelGrid styleClass="goodsTable" columns="2" cellpadding="0" cellspacing="0">
+														<h:outputText value="#{price.price}">
+															<f:convertNumber groupingUsed="true" minFractionDigits="2" />
+														</h:outputText>
+
+														<ui:param name="pd" value="#{productPriceService.getPriceDirection(productBackingBean.editProduct,price)}" />
+
+														<p:outputPanel>
+															<p:outputPanel style="color: green; font-weight: bold;" rendered="#{pd==0}">
+																<i class="fa fa-circle-o" />
+															</p:outputPanel>
+															<p:outputPanel style="color: green; font-weight: bold;" rendered="#{pd==1}">
+																<i class="fa fa-arrow-up" />
+																<p:spacer width="3" />
+																<h:outputLabel value="#{productPriceService.getPriceDifference(productBackingBean.editProduct,price)}">
+																	<f:convertNumber groupingUsed="true" maxFractionDigits="2" />
+																</h:outputLabel>
+															</p:outputPanel>
+															<p:outputPanel style="color: red; font-weight: bold;" rendered="#{pd==-1}">
+																<i class="fa fa-arrow-down" />
+																<p:spacer width="3" />
+																<h:outputLabel value="#{productPriceService.getPriceDifference(productBackingBean.editProduct,price)}">
+																	<f:convertNumber groupingUsed="true" maxFractionDigits="2" />
+																</h:outputLabel>
+															</p:outputPanel>
+														</p:outputPanel>
+													</p:panelGrid>
+												</f:facet>
+												<f:facet name="input">
+													<p:inputText value="#{price.price}" style="width:96%" label="Цена">
+														<f:convertNumber groupingUsed="true" minFractionDigits="2" />
+													</p:inputText>
+												</f:facet>
+											</p:cellEditor>
+										</p:column>
+									</p:dataTable>
+								</div>
+							</div>
+
+							<div class="ui-grid-row resp_grid_mar_tb_5">
+								<div class="ui-grid-col-1 resp_ui-grid-col-1">
+									<p:outputLabel value="#{msgs['product.contractPrice']}" />
+								</div>
+								<div class="ui-grid-col-5">
+									<p:selectBooleanCheckbox value="#{productBackingBean.editProduct.contractPrice}"/>
+								</div>
+							</div>
+
+							<div class="ui-grid-row resp_grid_mar_tb_5">
+								<div class="ui-grid-col-1 resp_ui-grid-col-1">
+									<p:outputLabel value="#{msgs['product.balance']}" />
+								</div>
+								<div class="ui-grid-col-10">
+									<p:outputLabel value="#{productBackingBean.editProduct.balance}" rendered="#{canEditProducts}"/>
+									<p:inputText value="#{productBackingBean.editProduct.balance}" rendered="#{!canEditProducts}"/>
+								</div>
+							</div>
+
+							<div class="ui-grid-row resp_grid_mar_tb_5">
+								<div class="ui-grid-col-1 resp_ui-grid-col-1">
+									<p:outputLabel value="#{msgs['product.description']}" />
+								</div>
+								<div class="ui-grid-col-10">
+									<p:outputLabel value="#{productBackingBean.editProduct.description}" rendered="#{canEditProducts}"/>
+									<p:inputTextarea rows="2" value="#{productBackingBean.editProduct.description}" rendered="#{!canEditProducts}"/>
+								</div>
+							</div>
+						</div>
+					</div>
+
+					<p:panelGrid columns="2" cellpadding="5" style="margin: 0 auto;" styleClass="ui-noborder">
+						<p:commandButton value="Сохранить" update=":form_edit_goods:table_goods" actionListener="#{productController.buttonActionSaveEditProduct}" oncomplete="PF('dlg_edit_good').hide();" rendered="#{!canEditProducts}"/>
+						<p:commandButton value="Отмена" update=":form_edit_goods:table_goods" process="@this" actionListener="#{productController.buttonActionCancelEditProduct}" oncomplete="PF('dlg_edit_good').hide();" rendered="#{!canEditProducts}">
+							<p:resetInput target="dialog_edit_good" />
+						</p:commandButton>
+						<p:commandButton value="Назад" actionListener="#{productController.buttonActionBackEditProduct}" oncomplete="PF('dlg_edit_good').hide();" rendered="#{canEditProducts}" />
+					</p:panelGrid>
+				</h:form>
+
+			</p:dialog>
+
+
+			<p:dialog style="width:50%; max-width: 95%; max-height: 95%; overflow: auto;" id="dialog_contractor_choice" widgetVar="dlg_product_type_choice" resizable="false" modal="true" draggable="false" rendered="#{!canEditProducts}">
+			<h:form id="form_product_type_choice">
+			<p:menubar id="menubar_product_types">
+				<p:menuitem value="Добавить" icon="fa fa-plus-circle fa-fw fa-fvm" actionListener="#{productController.buttonActionNewProductType}" update="table_product_types"/>
+				<p:menuitem value="Удалить" icon="fa fa-times-circle fa-fw fa-fvm" onclick="PF('dlg_delete_goodKind').show();" update="form_goodKind_delete" />
+				<f:facet name="options">
+			<p:inputText id="searchContractorFieldStr" value="#{productBackingBean.popupDialogSearchStringContractorByNameWork}" placeholder="Поиск по Наименование рабочее" style="margin-right:10px">
+			<p:ajax event="keyup" update="table_product_types" listener="#{productController.refreshProductTypesTableInPopupDialog}" />
+			</p:inputText>
+			<p:commandButton type="button" icon="fa fa-close fa-fw">
+			<p:ajax event="click" listener="#{productController.resetProductTypesTableInPopupDialog}" update="form_product_type_choice" />
+			</p:commandButton>
+			</f:facet>
+			</p:menubar>
+
+			<p:dataTable id="table_product_types" var="goodKind" value="#{productController.getProductTypes()}" selectionMode="single" selection="#{productBackingBean.popupDialogSelectedProductType}" editable="true" editMode="row" rowKey="#{goodKind.id}" rows="20" paginator="true"
+			paginatorTemplate="{CurrentPageReport} {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink}" currentPageReportTemplate="Вид товаров всего {totalRecords}. Страница {currentPage} из {totalPages}" emptyMessage="Не найдено">
+
+			<p:ajax event="rowSelect" update=":form_product_type_choice:buttonChoice" />
+			<p:ajax event="rowUnselect" update=":form_product_type_choice:buttonChoice" />
+				<p:ajax event="rowDblselect" listener="#{productController.doubleClickSelectedRowInTableProductTypesPopupDialog}" update=":form_good_edit:driveCood" onsuccess="PF('dlg_product_type_choice').hide();" />
+				<p:ajax event="rowEdit" listener="#{productController.onRowEditProductType}" update="table_product_types" />
+				<p:ajax event="rowEditCancel" listener="#{productController.onRowCancelProductType}" update="table_product_types" />
+
+				<p:column style="width:20px; text-align: center;" priority="1">
+					<f:facet name="header">
+						<i class="fa fa-check" />
+					</f:facet>
+					<p:commandButton icon="fa fa-check" actionListener="#{productController.setProductTypeForSelectedProduct(goodKind)}" update=":form_good_edit:driveCood" onsuccess="PF('dlg_product_type_choice').hide();" />
+				</p:column>
+				<p:column headerText="#{msgs['productType.nameWork']}">
+					<p:cellEditor>
+						<f:facet name="output">
+							<h:outputText value="#{goodKind.nameWork}" />
+						</f:facet>
+						<f:facet name="input">
+							<p:inputText value="#{goodKind.nameWork}" style="width:98%" />
+						</f:facet>
+					</p:cellEditor>
+				</p:column>
+				<p:column headerText="#{msgs['productType.nameFull']}">
+					<p:cellEditor>
+						<f:facet name="output">
+							<h:outputText value="#{goodKind.nameFull}" />
+						</f:facet>
+						<f:facet name="input">
+							<p:inputText value="#{goodKind.nameFull}" style="width:98%" />
+						</f:facet>
+					</p:cellEditor>
+				</p:column>
+				<p:column headerText="#{msgs['productType.density']}">
+					<p:cellEditor>
+						<f:facet name="output">
+							<h:outputText value="#{goodKind.density}">
+								<f:convertNumber minFractionDigits="3" groupingUsed="true" />
+							</h:outputText>
+						</f:facet>
+						<f:facet name="input">
+							<p:inputText value="#{goodKind.density}" style="width:98%">
+								<f:convertNumber minFractionDigits="3" groupingUsed="true" />
+							</p:inputText>
+						</f:facet>
+					</p:cellEditor>
+				</p:column>
+
+				<p:column headerText="#{msgs['productType.description']}">
+					<p:cellEditor>
+						<f:facet name="output">
+							<h:outputText value="#{goodKind.description}" />
+						</f:facet>
+						<f:facet name="input">
+							<p:inputText value="#{goodKind.description}" style="width:98%" />
+						</f:facet>
+					</p:cellEditor>
+				</p:column>
+				<p:column style="width:30px; text-align: center; float:center">
+					<f:facet name="header">
+						<i class="fa fa-edit" />
+					</f:facet>
+
+					<p:rowEditor style="text-align: center; float:center" />
+				</p:column>
+			</p:dataTable>
+			<h:panelGrid columns="2" cellpadding="5" style="margin: 0 auto;">
+			<p:commandButton id="buttonChoice" icon="fa fa-check fa-fw fa-fvm" value="Выбор" update=":form_good_edit:driveCood" actionListener="#{productController.doubleClickSelectedRowInTableProductTypesPopupDialog}" oncomplete="PF('dlg_product_type_choice').hide();" disabled="#{productBackingBean.popupDialogSelectedProductType==null}" />
+			<p:commandButton value="Отмена" onclick="PF('dlg_product_type_choice').hide();" />
+			</h:panelGrid>
+			</h:form>
+			</p:dialog>
+
+			<p:dialog id="dialog_delete_goodKind" header="Удаление вида товара / услуги" widgetVar="dlg_delete_goodKind" resizable="false" modal="true" draggable="false" showEffect="fade" hideEffect="explode" rendered="#{!canEditProducts}">
+				<h:form id="form_goodKind_delete">
+					<h:panelGrid columns="1" cellpadding="5" style="width: 100%;">
+						<h:outputLabel value="Вы действительно хотите удалить данный вид товара ?" />
+						<h:outputLabel style="font-weight: bold;" value="Вид товара: #{productBackingBean.popupDialogSelectedProductType.nameWork} идент.: #{productBackingBean.popupDialogSelectedProductType.id}" />
+						<h:panelGrid columns="2" cellpadding="5" style="margin: 0 auto;">
+							<p:commandButton icon="fa fa-times-circle fa-fw fa-fvm" value="Удалить" update=":form_product_type_choice:table_product_types" actionListener="#{productController.buttonActionRemoveProductType}" oncomplete="PF('dlg_delete_goodKind').hide();" />
+							<p:commandButton value="Отмена" onclick="PF('dlg_delete_goodKind').hide();" />
+						</h:panelGrid>
+					</h:panelGrid>
+				</h:form>
+			</p:dialog>
+
+			<p:dialog style="width:50%; max-width: 95%; max-height: 95%; overflow: auto;" id="dialog_product_shipment_base_choice" widgetVar="dlg_shipment_base_choice" resizable="false" modal="true" draggable="false" rendered="#{!canEditProducts}">
+				<h:form id="form_shipment_base_choice">
+					<p:menubar id="menubar_shipment_bases">
+						<p:menuitem value="Добавить" icon="fa fa-plus-circle fa-fw fa-fvm" actionListener="#{productController.buttonActionNewShipmentBase}" update="table_shipment_bases" />
+						<p:menuitem value="Удалить" icon="fa fa-times-circle fa-fw fa-fvm" onclick="PF('dlg_delete_shipment_base').show();" update="form_shipment_delete" />
+						<f:facet name="options">
+							<p:inputText id="searchShipmentBasedStr" value="#{productBackingBean.popupDialogSearchStringShipmentBaseByNameShort}" placeholder="Поиск по названию базы" style="margin-right:10px">
+								<p:ajax event="keyup" update="table_shipment_bases" listener="#{productController.refreshShipmentBasisTableInPopupDialog}" />
+							</p:inputText>
+							<p:commandButton type="button" icon="fa fa-close fa-fw">
+								<p:ajax event="click" listener="#{productController.resetShipmentBasisTableInPopupDialog}" update="form_shipment_base_choice" />
+							</p:commandButton>
+						</f:facet>
+					</p:menubar>
+
+					<div style="height: 5px;" />
+					<p:dataTable id="table_shipment_bases" var="shipment_base" value="#{productController.getProductShipmentBases()}" selectionMode="single" selection="#{productBackingBean.popupDialogSelectedShipmentBase}" rowKey="#{shipment_base.id}" rows="20" paginator="true"
+								 paginatorTemplate="{CurrentPageReport} {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink}" editable="true" currentPageReportTemplate="Базис отгрузки всего {totalRecords}. Страница {currentPage} из {totalPages}" emptyMessage="Не найдено">
+
+						<p:ajax event="rowSelect" update=":form_shipment_base_choice:buttonChoiceProductShipmentBasis" />
+						<p:ajax event="rowUnselect" update=":form_shipment_base_choice:buttonChoiceProductShipmentBasis" />
+						<p:ajax event="rowDblselect" listener="#{productController.doubleClickSelectedRowInTableShipmentBasisPopupDialog}" update=":form_good_edit:shipment_base_choose_id" onsuccess="PF('dlg_shipment_base_choice').hide();" />
+
+						<p:ajax event="rowEdit" listener="#{productController.onRowEditShipmentBase}" update="table_shipment_bases" />
+						<p:ajax event="rowEditCancel" listener="#{productController.onRowCancelShipmentBase}" update="table_shipment_bases" />
+
+						<p:column style="width:20px; text-align: center;" priority="1">
+							<f:facet name="header">
+								<i class="fa fa-check" />
+							</f:facet>
+							<p:commandButton icon="fa fa-check" actionListener="#{productController.setShipmentBaseForSelectedProduct(shipment_base)}" update=":form_good_edit:shipment_base_choose_id" onsuccess="PF('dlg_shipment_base_choice').hide();" />
+						</p:column>
+						<p:column headerText="#{msgs['base.nameShort']}">
+							<p:cellEditor>
+								<f:facet name="output">
+									<h:outputText value="#{shipment_base.nameShort}" />
+								</f:facet>
+								<f:facet name="input">
+									<p:inputText value="#{shipment_base.nameShort}" style="width:98%" />
+								</f:facet>
+							</p:cellEditor>
+						</p:column>
+						<p:column headerText="#{msgs['base.nameFull']}">
+							<p:cellEditor>
+								<f:facet name="output">
+									<h:outputText value="#{shipment_base.nameFull}" />
+								</f:facet>
+								<f:facet name="input">
+									<p:inputText value="#{shipment_base.nameFull}" style="width:98%" />
+								</f:facet>
+							</p:cellEditor>
+						</p:column>
+						<p:column headerText="#{msgs['base.description']}">
+							<p:cellEditor>
+								<f:facet name="output">
+									<h:outputText value="#{shipment_base.description}" />
+								</f:facet>
+								<f:facet name="input">
+									<p:inputText value="#{shipment_base.description}" style="width:98%" />
+								</f:facet>
+							</p:cellEditor>
+						</p:column>
+						<p:column style="width:30px; text-align: center; float:center">
+							<f:facet name="header">
+								<i class="fa fa-edit" />
+							</f:facet>
+
+							<p:rowEditor style="text-align: center; float:center" />
+						</p:column>
+					</p:dataTable>
+					<h:panelGrid columns="2" cellpadding="5" style="margin: 0 auto;">
+						<p:commandButton id="buttonChoiceProductShipmentBasis" icon="fa fa-check fa-fw fa-fvm" value="Выбор" update=":form_good_edit:shipment_base_choose_id" actionListener="#{productController.doubleClickSelectedRowInTableShipmentBasisPopupDialog}" oncomplete="PF('dlg_shipment_base_choice').hide();" disabled="#{productBackingBean.popupDialogSelectedShipmentBase==null}" />
+						<p:commandButton value="Отмена" onclick="PF('dlg_shipment_base_choice').hide();" />
+					</h:panelGrid>
+				</h:form>
+			</p:dialog>
+
+			<p:dialog id="dialog_delete_shipmentBase" header="Удаление вида товара / услуги" widgetVar="dlg_delete_shipment_base" resizable="false" modal="true" draggable="false" showEffect="fade" hideEffect="explode" rendered="#{!canEditProducts}">
+				<h:form id="form_shipment_delete">
+					<h:panelGrid columns="1" cellpadding="5" style="width: 100%;">
+						<h:outputLabel value="Вы действительно хотите удалить данный вид товара ?" />
+						<h:outputLabel style="font-weight: bold;" value="Вид товара: #{productBackingBean.popupDialogSelectedShipmentBase.nameShort} идент.: #{productBackingBean.popupDialogSelectedShipmentBase.id}" />
+						<h:panelGrid columns="2" cellpadding="5" style="margin: 0 auto;">
+							<p:commandButton icon="fa fa-times-circle fa-fw fa-fvm" value="Удалить" update=":form_shipment_base_choice:table_shipment_bases" actionListener="#{productController.buttonActionRemoveShipmentBase}" oncomplete="PF('dlg_delete_shipment_base').hide();" />
+							<p:commandButton value="Отмена" onclick="PF('dlg_delete_goodKind').hide();" />
+						</h:panelGrid>
+					</h:panelGrid>
+				</h:form>
+			</p:dialog>
+
+			<h:form id="form_edit_goods">
+				<div class="ui-fluid" style="width: 100%;">
+					<div class="ui-grid ui-grid-responsive">
+						<div class="ui-grid-row">
+							<div class="ui-grid-col-3">
+								<p:menubar id="toolbar_groups" >
+									<p:menuitem title="Добавить группу" icon="fa fa-plus-circle fa-fw fa-fvm" actionListener="#{productController.buttonAddNewGroup}" update="goods_groups form_edit_goods:goods_groups_list" />
+									<p:menuitem title="Удалить группу" icon="fa fa-times-circle fa-fw fa-fvm" onclick="PF('dlg_delete_group').show();" update=":form_group_delete:label_deleteGroup" disabled="#{productBackingBean.selectedProductNode==null}" />
+
+									<f:facet name="options">
+										<p:inputSwitch style="height:16px !important;" id="switchGoodsReorder" value="#{productBackingBean.productGroupSwitchOrder}" showLabels="false">
+											<p:ajax listener="#{productController.switchReorderEvent}" update=":form_edit_goods:goods_groups :form_edit_goods:table_goods" />
+										</p:inputSwitch>
+									</f:facet>
+								</p:menubar>
+								<div style="height: 5px;" />
+
+								<div id="lo_goods_groups">
+									<p:tree id="goods_groups" style="width: 99.5%;" value="#{productController.root}" var="node" dynamic="true" selectionMode="single" selection="#{productBackingBean.selectedProductNode}" draggable="#{productBackingBean.productGroupSwitchOrder}" droppable="#{productBackingBean.productGroupSwitchOrder}" dragdropScope="demo">
+										<p:ajax event="dragdrop" listener="#{productController.onDragDropTreeProductGroups}" />
+										<p:ajax event="select" listener="#{productController.changeProductsOfSelectedGroup}" update=":form_group_delete:label_deleteGroup :form_group_edit:editGroup_title :form_edit_goods:toolbar_groups :form_edit_goods:table_goods form_edit_goods:goods_groups_list" />
+										<p:treeNode expandedIcon="ui-icon-folder-open" collapsedIcon="ui-icon-folder-collapsed">
+											<p:outputLabel id="node_group" ondblclick="PF('dlg_edit_group').show();" value="#{node.title}" />
+										</p:treeNode>
+									</p:tree>
+								</div>
+								<div id="lo_goods_groups_list">
+
+									<p:outputPanel id="panel_goods_groups_list">
+										<p:selectOneMenu id="goods_groups_list"  converter="productNodeConverter" value="#{productBackingBean.selectedProductNode}">
+											<p:ajax event="change" listener="#{productController.changeProductsOfSelectedGroup}" update=":form_group_delete:label_deleteGroup :form_group_edit:editGroup_title :form_edit_goods:toolbar_groups :form_edit_goods:table_goods form_edit_goods:goods_groups" />
+											<f:selectItems value="#{productController.getNodeList()}" var="gtn" itemValue="#{gtn}" itemLabel="#{gtn.data.title}" />
+										</p:selectOneMenu>
+									</p:outputPanel>
+
+									<p:sticky target="panel_goods_groups_list" margin="5" />
+								</div>
+							</div>
+
+							<div class="ui-grid-col-1 ui-grid-col-5px">
+								<div style="height: 5px;" />
+							</div>
+							<div class="ui-grid-col-10">
+								<p:menubar id="toolbar_goods" rendered="#{!goods.readOnly or cpom.user.allowGoodsBalanceEdit}">
+									<p:menuitem title="Добавить товар" icon="fa fa-plus-circle fa-fw fa-fvm" actionListener="#{productController.buttonActionNewProduct}" update=":form_good_edit" oncomplete="PF('dlg_edit_good').show();" />
+									<p:menuitem title="Удалить товар" icon="fa fa-times-circle fa-fw fa-fvm" oncomplete="PF('dlg_delete_good').show();" update=":form_good_delete:label_deleteGood" disabled="#{productBackingBean.selectedProduct==null}" />
+									<p:menuitem value="Обновить цены" icon="fa fa-rouble fa-fw fa-fvm" actionListener="#{productController.buttonActionNewPrices}" update=":dialog_newprices" oncomplete="PF('dlg_newprices').show();"/>
+									<p:menuitem value="Обновить остатки" icon="fa fa-reply-all fa-fw fa-fvm" actionListener="#{goods.buttonActionNewBalances}" update=":dialog_newbalances" oncomplete="PF('dlg_newbalances').show();" rendered="#{cpom.user.allowGoodsBalanceEdit}" />
+								</p:menubar>
+
+								<div style="height: 5px;" />
+
+								<p:dataTable id="table_goods" draggableRows="#{productBackingBean.productGroupSwitchOrder}" var="good" value="#{productController.products}" selectionMode="single" selection="#{productBackingBean.selectedProduct}" rowKey="#{good.id}" rows="20" paginator="true" paginatorAlwaysVisible="false" paginatorTemplate="{CurrentPageReport} {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink}" currentPageReportTemplate="Страница {currentPage} из {totalPages}" emptyMessage="Нет записей">
+
+									<p:ajax event="rowReorder" listener="#{productController.onRowProductsReorder}" />
+									<p:ajax event="rowSelect" update=":form_edit_goods:toolbar_goods" />
+									<p:ajax event="rowUnselect" update="form_edit_goods:toolbar_goods" />
+									<p:ajax event="rowDblselect" listener="#{productController.eventRowDoubleSelect}" update=":dialog_edit_good" oncomplete="PF('dlg_edit_good').show();" />
+
+									<p:column style="width:20px; text-align: center;" priority="1">
+										<f:facet name="header">
+											<i class="fa fa-line-chart" />
+										</f:facet>
+										<p:commandButton icon="fa fa-line-chart" actionListener="#{productController.refreshProductChart(good)}" oncomplete="PF('dlg_chartgood').show();" update="dialog_chartgood" />
+									</p:column>
+
+									<p:column style="width:20px; text-align: center;" priority="2">
+										<f:facet name="header">
+											<i class="fa fa-edit" />
+										</f:facet>
+										<p:commandButton icon="fa fa-edit" actionListener="#{productController.editProduct(good)}" oncomplete="PF('dlg_edit_good').show();" update="table_goods :dialog_edit_good" />
+
+
+									</p:column>
+
+									<p:column headerText="#{msgs['product.type']}" style="white-space:nowrap;" priority="2" rendered="false">
+										<h:outputText value="Товар" rendered="#{good.type == 1}" />
+										<h:outputText value="Услуга" rendered="#{good.type == 2}" />
+									</p:column>
+
+									<p:column headerText="#{msgs['product.active']}" style="white-space:nowrap;width:30px;" priority="3">
+										<p:outputPanel style="text-align: center;" rendered="#{good.active}">
+											<i class="fa fa-check-square-o" />
+										</p:outputPanel>
+										<p:outputPanel style="text-align: center;" rendered="#{!good.active}">
+											<i class="fa fa-square-o" />
+										</p:outputPanel>
+									</p:column>
+
+									<p:column headerText="#{msgs['product.kind']}" style="white-space:nowrap;width:80px;" priority="2">
+										<h:outputText id="button_edit" value="#{good.productType.nameFull}" />
+									</p:column>
+									<p:column headerText="База" style="white-space:nowrap;" priority="2">
+										<h:outputText value="#{good.shipmentBaseId.nameShort}" />
+									</p:column>
+									<p:column headerText="#{msgs['product.code']}" style="white-space:nowrap;" priority="1">
+										<h:outputText value="#{good.code}" />
+									</p:column>
+									<p:column headerText="#{msgs['product.nameShort']}" style="white-space:nowrap;" priority="2" rendered="false">
+										<h:outputText value="#{good.nameShort}" />
+									</p:column>
+									<p:column headerText="#{msgs['product.price']}" style="width:130px;" priority="1">
+										<ui:param name="pd" value="#{productPriceService.getPriceDirection(good,productPriceService.getProductActualPrice(good.productPricesList))}" />
+										<p:panelGrid styleClass="goodsTable" columns="3" cellpadding="0" cellspacing="0">
+
+											<h:outputText style="text-align: left; float:left; font-size: xx-small;" value="#{productPriceService.getProductActualPrice(good.productPricesList).timeModified}">
+												<f:convertDateTime pattern="dd.MM.yy HH:mm" />
+											</h:outputText>
+											<h:outputText style="float:right;" value="#{productPriceService.getProductActualPrice(good.productPricesList).price}">
+												<f:convertNumber groupingUsed="true" maxFractionDigits="2" />
+											</h:outputText>
+											<p:outputPanel>
+												<p:outputPanel style="color: green; font-weight: bold;" rendered="#{pd==0}">
+													<i class="fa fa-circle-o" />
+												</p:outputPanel>
+												<p:outputPanel style="color: green; font-weight: bold;" rendered="#{pd==1}">
+													<i class="fa fa-arrow-up" />
+													<p:spacer width="3" />
+													<h:outputLabel value="#{productPriceService.getPriceDifference(good,productPriceService.getProductActualPrice(good.productPricesList))}">
+														<f:convertNumber groupingUsed="true" maxFractionDigits="2" />
+													</h:outputLabel>
+												</p:outputPanel>
+												<p:outputPanel style="color: red; font-weight: bold;" rendered="#{pd==-1}">
+													<i class="fa fa-arrow-down" />
+													<p:spacer width="3" />
+													<h:outputLabel value="#{productPriceService.getPriceDifference(good,productPriceService.getProductActualPrice(good.productPricesList))}">
+														<f:convertNumber groupingUsed="true" maxFractionDigits="2" />
+													</h:outputLabel>
+												</p:outputPanel>
+											</p:outputPanel>
+										</p:panelGrid>
+									</p:column>
+
+									<p:column headerText="#{msgs['product.meashureUnit']}" style="width:20px;white-space:nowrap;" priority="2" rendered="false">
+										<h:outputText value="#{good.measureUnit.id}" />
+									</p:column>
+
+									<p:column headerText="#{msgs['product.contractPrice']}" style="white-space:nowrap;" priority="3" rendered="false">
+										<p:outputPanel style="text-align: center;" rendered="#{good.contractPrice}">
+											<i class="fa fa-check-square-o" />
+										</p:outputPanel>
+										<p:outputPanel style="text-align: center;" rendered="#{!good.contractPrice}">
+											<i class="fa fa-square-o" />
+										</p:outputPanel>
+									</p:column>
+
+									<p:column headerText="#{msgs['product.balance']}" style="white-space:nowrap;" priority="1">
+										<h:outputText value="#{good.balance}" />
+									</p:column>
+								</p:dataTable>
+							</div>
+						</div>
+					</div>
+				</div>
+			</h:form>
+		</ui:define>
+	</ui:composition>
+</h:body>
+</html>

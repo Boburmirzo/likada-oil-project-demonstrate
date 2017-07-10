@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+		"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:h="http://java.sun.com/jsf/html" xmlns:f="http://java.sun.com/jsf/core" xmlns:ui="http://java.sun.com/jsf/facelets" xmlns:p="http://primefaces.org/ui">
+
+<h:body>
+	<ui:composition template="/layout/forcab.xhtml">
+		<ui:define name="windowTitle">#{msgs['customers.title']}</ui:define>
+		<ui:define name="content">
+
+			<h:form id="form_customers_edit">
+				<p:growl id="growl" showDetail="true"/>
+				<p:dialog id="dialog_delete_customer" header="Удаление клиента" widgetVar="dlg_delete_customer" resizable="false" modal="true" draggable="false" showEffect="fade" hideEffect="explode">
+					<h:panelGrid columns="1" cellpadding="5" style="width: 100%;">
+						<h:outputLabel value="Удалить ? :" />
+						<h:outputLabel id="label_deleteCustomer" value="#{customerBackingBean.selectedCustomer.title} (Идент: #{customerBackingBean.selectedCustomer.id})" />
+						<h:panelGrid columns="2" cellpadding="5" style="margin: 0 auto;">
+							<p:commandButton type="button" icon="fa fa-times-circle fa-fw fa-fvm" value="Удалить">
+								<p:ajax event="click" listener="#{customerController.deleteSelectedCustomer}" update=":form_customers_edit:growl table_customers :form_customers_edit:itemsCommands_full :form_customers_edit:itemsCommands_resp" oncomplete="PF('dlg_delete_customer').hide();" />
+							</p:commandButton>
+							<p:commandButton type="button" value="Отмена" onclick="PF('dlg_delete_customer').hide();" />
+						</h:panelGrid>
+					</h:panelGrid>
+				</p:dialog>
+
+				<div class="ui-fluid">
+					<div class="page_title">#{msgs['customers.title']}</div>
+
+
+					<div id="menu_customers_full">
+						<p:menubar id="itemsCommands_full">
+							<p:menuitem value="Добавить" id="mi_customers_add"
+										disabled="#{!loginController.hasAccessTo(enumBean.modelCustomer, enumBean.accessAdd)}"
+										icon="fa fa-plus-circle fa-fw fa-fvm"
+										actionListener="#{customerController.buttonActionAddCustomer}"
+										update="table_customers">
+							</p:menuitem>
+							<p:menuitem value="Удалить" icon="fa fa-times-circle fa-fw fa-fvm" id="mi_customers_remove"
+										onclick="PF('dlg_delete_customer').show();" update="label_deleteCustomer"
+										disabled="#{customerBackingBean.selectedCustomer==null or !loginController.hasAccessTo(enumBean.modelCustomer, enumBean.accessDelete)}">
+							</p:menuitem>
+
+							<f:facet name="options">
+								<div class="ui-grid ui-grid-responsive">
+									<table width="100%" border="0" cellpadding="0" cellspacing="0">
+										<tr>
+											<td><p:inputText value="#{customerBackingBean.searchStringCustomer}" placeholder="Поиск по клиенту" style="margin-right:10px">
+													<p:ajax event="keyup" update="table_customers" listener="#{customerController.refreshCustomersTable}" />
+												</p:inputText></td>
+											<td style="width: 30px;" align="right"><p:commandButton style="width:30px;" type="button" icon="fa fa-close fa-fw">
+													<p:ajax event="click" listener="#{customerController.resetCustomersTableSearchFilter}" update="form_customers_edit" />
+												</p:commandButton></td>
+										</tr>
+									</table>
+								</div>
+							</f:facet>
+						</p:menubar>
+					</div>
+
+					<div id="menu_customers_resp">
+						<p:menubar id="itemsCommands_resp">
+							<p:menuitem
+										disabled="#{!loginController.hasAccessTo(enumBean.modelCustomer, enumBean.accessAdd)}"
+										icon="fa fa-plus-circle fa-fw fa-fvm"
+										actionListener="#{customerController.buttonActionAddCustomer}"
+										update="table_customers">
+							</p:menuitem>
+							<p:menuitem icon="fa fa-times-circle fa-fw fa-fvm"
+										onclick="PF('dlg_delete_customer').show();" update="label_deleteCustomer"
+										disabled="#{customerBackingBean.selectedCustomer==null or !loginController.hasAccessTo(enumBean.modelCustomer, enumBean.accessDelete)}">
+							</p:menuitem>
+
+							<f:facet name="options">
+								<div class="ui-grid ui-grid-responsive">
+									<table width="100%" border="0" cellpadding="0" cellspacing="0">
+										<tr>
+											<td><p:inputText value="#{customerBackingBean.searchStringCustomer}" placeholder="Поиск по клиенту" style="margin-right:10px">
+												<p:ajax event="keyup" update="table_customers" listener="#{customerController.refreshCustomersTable}" />
+											</p:inputText></td>
+											<td style="width: 30px;" align="right"><p:commandButton style="width:30px;" type="button" icon="fa fa-close fa-fw">
+												<p:ajax event="click" listener="#{customerController.resetCustomersTableSearchFilter}" update="form_customers_edit" />
+											</p:commandButton></td>
+										</tr>
+									</table>
+								</div>
+							</f:facet>
+						</p:menubar>
+					</div>
+
+
+					<div style="height: 5px;" />
+					<p:dataTable id="table_customers" var="customer" value="#{customerController.getCustomers()}" selectionMode="single" selection="#{customerBackingBean.selectedCustomer}" rowKey="#{customer.id}" rows="25" rowsPerPageTemplate="10,25,50,100" paginator="true"
+                                 paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}" currentPageReportTemplate="{totalRecords} ({currentPage} из {totalPages})" emptyMessage="Не найдено">
+
+						<p:ajax event="rowSelect" update=":form_customers_edit:itemsCommands_full :form_customers_edit:itemsCommands_resp" />
+						<p:ajax event="rowUnselect" update=":form_customers_edit:itemsCommands_full :form_customers_edit:itemsCommands_resp" />
+						<p:ajax event="rowDblselect" listener="#{customerController.doubleClickSelectedRowInTableCustomers}" />
+
+						<p:column headerText="#{msgs['customer.customerId']}" style="width:30px;" priority="2">
+							<h:outputText value="#{customer.id}" />
+						</p:column>
+
+						<p:column style="width:40px; text-align: center;" priority="1">
+							<f:facet name="header">
+								<i class="fa fa-edit" />
+							</f:facet>
+
+							<p:splitButton actionListener="#{customerController.editCustomer(customer)}" icon="fa fa-edit">
+								<p:menuitem icon="fa fa-edit" value="Правка" actionListener="#{customerController.editCustomer(customer)}" />
+							</p:splitButton>
+						</p:column>
+
+						<p:column headerText="#{msgs['customer.title']}" style="white-space:nowrap;" priority="1">
+							<h:outputText value="#{customer.title}" />
+						</p:column>
+
+						<p:column headerText="#{msgs['customer.managerUser']}" style="white-space:nowrap;" priority="1" rendered="true">
+							<ui:repeat var="manager" value="#{customer.getCustomerManagersList()}" varStatus="status">
+								<h:outputText value="#{manager.title}" />
+								<h:outputText rendered="#{!status.last}" value=", " />
+							</ui:repeat>
+						</p:column>
+
+						<p:column headerText="#{msgs['customer.debBalance']}" style="white-space:nowrap;" priority="1" rendered="#{cpom.salesDep}">
+
+						</p:column>
+
+						<p:column headerText="#{msgs['customer.paymentNoticeToday']}" style="white-space:nowrap;" priority="1" rendered="#{cpom.salesDep}">
+						</p:column>
+
+						<p:column headerText="#{msgs['customer.paymentNoticeTomorrow']}" style="white-space:nowrap;" priority="1" rendered="#{cpom.salesDep}">
+
+						</p:column>
+
+
+						<p:column headerText="#{msgs['customer.contacts']}" style="white-space:nowrap;" priority="2" rendered="#{!cpom.salesDep}">
+							<h:outputText value="#{customer.contacts}" />
+						</p:column>
+						<p:column headerText="#{msgs['customer.description']}" style="white-space:nowrap;" priority="3" rendered="#{!cpom.salesDep}">
+							<h:outputText value="#{customer.description}" />
+						</p:column>
+					</p:dataTable>
+				</div>
+			</h:form>
+		</ui:define>
+	</ui:composition>
+</h:body>
+</html>

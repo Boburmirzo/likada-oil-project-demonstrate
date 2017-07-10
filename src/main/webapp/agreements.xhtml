@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" 
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:h="http://java.sun.com/jsf/html" xmlns:f="http://java.sun.com/jsf/core" xmlns:ui="http://java.sun.com/jsf/facelets" xmlns:p="http://primefaces.org/ui">
+<h:body>
+	<ui:composition template="/layout/forcab.xhtml">
+		<ui:define name="windowTitle">#{msgs['agreements.title']}</ui:define>
+		<ui:define name="content">
+
+			<p:dialog style="width:50%; max-width: 95%; max-height: 95%; overflow: auto;" id="dialog_delete_agreement" header="Удаление договора" widgetVar="dlg_delete_agreement" resizable="false" modal="true" draggable="false">
+				<h:form id="form_agreement_delete">
+					<p:growl id="growl" showDetail="true"/>
+					<h:panelGrid columns="1" cellpadding="5" style="width: 100%;">
+						<h:outputLabel value="Вы действительно хотите удалить данный договор и все вложенные данные включая дополнительные соглашения с контрагентами ?" />
+						<h:panelGrid columns="3">
+							<h:outputText  style="font-weight: bold;" value="Договор от: "/>
+							<h:outputText style="font-weight: bold;" value="#{agreementBackingBean.selectedAgreement.validFrom}"><f:converter converterId="customDateTimeConverter" /></h:outputText>
+							<h:outputText  style="font-weight: bold;" value=", идент.: #{agreementBackingBean.selectedAgreement.id}"/>
+						</h:panelGrid>
+						<h:panelGrid columns="2" cellpadding="5" style="margin: 0 auto;">
+							<p:commandButton icon="fa fa-times-circle fa-fw fa-fvm" value="Удалить" update=":form_agreement_delete:growl :form_edit_agreements:table_agreements :form_edit_agreements:toolbar_agreements" actionListener="#{agreementController.deleteSelectedAgreement}" oncomplete="PF('dlg_delete_agreement').hide();" />
+							<p:commandButton value="Отмена" onclick="PF('dlg_delete_agreement').hide();" />
+						</h:panelGrid>
+					</h:panelGrid>
+				</h:form>
+			</p:dialog>
+
+			<h:form id="form_edit_agreements">
+				<div class="page_title">#{msgs['agreements.title']}</div>
+				<p:menubar id="toolbar_agreements">
+					<p:menuitem value="Добавить" icon="fa fa-plus-circle fa-fw fa-fvm" actionListener="#{agreementController.buttonActionNewAgreement}" update="table_agreements" rendered="#{loginController.hasAccessTo(enumBean.modelAgreement, enumBean.accessAdd)}" />
+					<p:menuitem value="Удалить" icon="fa fa-times-circle fa-fw fa-fvm" onclick="PF('dlg_delete_agreement').show();" update=":form_agreement_delete" rendered="#{loginController.hasAccessTo(enumBean.modelAgreement, enumBean.accessDelete)}" disabled="#{agreementBackingBean.selectedAgreement==null}" />
+
+					<f:facet name="options">
+						<p:inputText id="searchAgreementFieldStr" value="#{agreementBackingBean.searchStringInAgreementTable}" placeholder="Поиск по договорам" style="margin-right:10px">
+							<p:ajax event="keyup" update="table_agreements" listener="#{agreementController.refreshAgreementsTable}" />
+						</p:inputText>
+						<p:commandButton type="button" icon="fa fa-close fa-fw">
+							<p:ajax event="click" listener="#{agreementController.resetSearchStringInAgreementTable}" update="form_edit_agreements" />
+						</p:commandButton>
+					</f:facet>
+				</p:menubar>
+				<div style="height: 5px;" />
+
+				<p:dataTable id="table_agreements" style="width:100%;" var="agreement" value="#{agreementController.getAgreements()}" selectionMode="single" selection="#{agreementBackingBean.selectedAgreement}" rowKey="#{agreement.id}" rows="25" rowsPerPageTemplate="10,25,50,100" paginator="true"
+					paginatorAlwaysVisible="true" paginatorTemplate="{CurrentPageReport} {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}" currentPageReportTemplate="Договоров всего {totalRecords}. Страница {currentPage} из {totalPages}" emptyMessage="Нет записей"
+					rowStyleClass="#{agreement.status == null ? 'agreementHasNoStatus': null}">
+
+					<p:ajax event="rowSelect" update=":form_edit_agreements:toolbar_agreements" />
+					<p:ajax event="rowUnselect" update=":form_edit_agreements:toolbar_agreements" />
+					<p:ajax event="rowDblselect" listener="#{agreementController.doubleClickSelectedRowInTableAgreements}" />
+
+					<p:column headerText="#{msgs['agreement.agrementId']}" style="width:30px; white-space:nowrap;" priority="2">
+						<h:outputText value="#{agreement.id}" />
+					</p:column>
+
+					<p:column style="width:20px; text-align: center;" priority="1">
+						<f:facet name="header">
+							<i class="fa fa-edit" />
+						</f:facet>
+						<p:commandButton icon="fa fa-edit" actionListener="#{agreementController.editAgreement(agreement)}" />
+					</p:column>
+
+					<p:column headerText="#{msgs['agreement.number']}" style="white-space: nowrap;" priority="1">
+						<p:outputLabel value="#{agreement.agreementNumber}" />
+					</p:column>
+
+					<p:column headerText="#{msgs['agreement.dateBegin']}" style="white-space: nowrap;" priority="2">
+						<h:outputText value="#{agreement.validFrom}">
+							<f:convertDateTime pattern="dd.MM.yyyy" locale="ru_RU" />
+						</h:outputText>
+					</p:column>
+
+					<p:column headerText="#{msgs['agreement.company']}" style="white-space: nowrap;" priority="1">
+						<p:outputLabel value="#{agreement.client.nameWork}" />
+					</p:column>
+
+					<p:column headerText="#{msgs['agreement.contractor']}" style="white-space: nowrap;" priority="1">
+						<h:outputText value="#{agreement.contractor.nameWork}" />
+					</p:column>
+					<p:column headerText="#{msgs['customer.managerUser']}" style="white-space: nowrap;" priority="2">
+						<ui:repeat var="manager" value="#{agreement.contractor.customer.getCustomerManagersList()}" varStatus="status">
+							<h:outputText value="#{manager.title}" />
+							<h:outputText rendered="#{!status.last}" value=", " />
+						</ui:repeat>
+					</p:column>
+
+					<p:column headerText="#{msgs['agreement.description']}" style="white-space: nowrap;" priority="2">
+						<h:outputText value="#{agreement.description}" />
+					</p:column>
+
+					<p:column headerText="#{msgs['contractor.INN']}" style="white-space: nowrap;" priority="2">
+						<h:outputText value="#{agreement.contractor.inn}" />
+					</p:column>
+
+					<p:column headerText="#{msgs['agreement.type']}" style="white-space: nowrap;" priority="3">
+						<h:outputText value="#{agreement.type.name}" />
+					</p:column>
+
+					<p:column headerText="#{msgs['agreement.status']}" style="white-space: nowrap;" priority="3">
+						<h:outputText value="#{agreement.status.name}" />
+					</p:column>
+				</p:dataTable>
+			</h:form>
+		</ui:define>
+	</ui:composition>
+</h:body>
+</html>
